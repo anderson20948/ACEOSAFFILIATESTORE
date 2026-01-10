@@ -67,8 +67,10 @@ async function setup() {
             title VARCHAR(255) NOT NULL,
             price DECIMAL(10, 2) NOT NULL,
             description TEXT,
+            category VARCHAR(100) DEFAULT 'General',
             status VARCHAR(50) DEFAULT 'pending',
             user_id BIGINT,
+            image_url TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
 
@@ -90,6 +92,12 @@ async function setup() {
             BEGIN 
                 IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='role') THEN
                     ALTER TABLE users ADD COLUMN role VARCHAR(50) DEFAULT 'affiliate';
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='category') THEN
+                    ALTER TABLE products ADD COLUMN category VARCHAR(100) DEFAULT 'General';
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='image_url') THEN
+                    ALTER TABLE products ADD COLUMN image_url TEXT;
                 END IF;
             END $$;
         `);

@@ -39,8 +39,18 @@ async function handleRegister() {
     const pass = document.getElementById('regPass').value;
     const confirm = document.getElementById('regConfirm').value;
 
+    if (!name || !email || !pass) {
+        alert('Please fill in all fields');
+        return;
+    }
+
     if (pass !== confirm) {
         alert('Passwords do not match');
+        return;
+    }
+
+    if (pass.length < 6) {
+        alert('Password must be at least 6 characters long');
         return;
     }
 
@@ -50,12 +60,12 @@ async function handleRegister() {
             body: JSON.stringify({ username: name, email: email, password: pass })
         });
 
-        if (data) {
-            alert('Registration successful! Please login.');
-            window.location.href = 'login.html';
+        if (data && data.message) {
+            alert(data.message + '! Redirecting to login...');
+            window.location.href = 'login.html?registered=success';
         }
     } catch (err) {
-        // Errors handled in safeFetch
+        console.error('Registration failed:', err);
     }
 }
 

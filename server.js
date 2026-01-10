@@ -271,16 +271,38 @@ app.post("/api/auth/login", (req, res, next) => {
 // JSON Auth Register
 app.post("/api/auth/register", async (req, res) => {
   const { username, email, password } = req.body;
+
+  if (!username || !email || !password) {
+    return res.status(400).json({ error: "Please provide name, email, and password" });
+  }
+
+  if (password.length < 6) {
+    return res.status(400).json({ error: "Password must be at least 6 characters long" });
+  }
+
   try {
+    // Check if email already exists
+    const userCheck = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+    if (userCheck.rows.length > 0) {
+      return res.status(400).json({ error: "Email already registered" });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const results = await pool.query(
-      "INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email",
+      "INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role",
       [username, email, hashedPassword, "affiliate"]
     );
-    res.json(results.rows[0]);
+
+    // Also log this activity
+    await pool.query(
+      "INSERT INTO activities (message, created_at) VALUES ($1, NOW())",
+      [`New user registered: ${username} (${email})`]
+    );
+
+    res.json({ message: "Registration successful", user: results.rows[0] });
   } catch (err) {
-    if (err.code === '23505') return res.status(400).json({ error: "Email already exists" });
-    res.status(500).json({ error: err.message });
+    console.error("Registration Error:", err);
+    res.status(500).json({ error: "A server error occurred during registration" });
   }
 });
 
