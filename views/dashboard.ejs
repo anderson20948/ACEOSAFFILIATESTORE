@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+  <title>Dashboard</title>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aceos Portal - Dashboard</title>
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet">
+  <link rel="stylesheet" href="css/font-awesome.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+  <meta name="csrf-token" content="<%= csrfToken %>">
+  <style>
+    /* Toast Notification Styles */
+    .toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 9999;
+    }
+
+    .toast {
+      background: #333;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    .toast.success {
+      background: #28a745;
+    }
+
+    .toast.error {
+      background: #dc3545;
+    }
+
+    .toast.info {
+      background: #17a2b8;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+  </style>
+</head>
+
+<body class="dashboard-body">
+
+  <!-- Sidebar -->
+  <aside id="dashboard-sidebar">
+    <div class="sidebar-header">
+      <a href="home.html" class="sidebar-brand">Aceos Portal</a>
+    </div>
+    <ul class="sidebar-nav">
+      <li><a href="dashboard.html" class="active"><i class="fa fa-th-large"></i> Home</a></li>
+      <li><a href="dashboard-advertising.html"><i class="fa fa-bullhorn"></i> Advertising</a></li>
+      <li><a href="dashboard-commerce.html"><i class="fa fa-shopping-cart"></i> Commerce</a></li>
+      <li><a href="dashboard-signal.html"><i class="fa fa-signal"></i> Signal</a></li>
+      <li><a href="home.html"><i class="fa fa-home"></i> Back to Site</a></li>
+    </ul>
+  </aside>
+
+  <!-- Main Content -->
+  <div id="dashboard-content">
+    <!-- Topbar -->
+    <header class="dashboard-topbar">
+      <h2>Welcome to Aceos</h2>
+      <div class="user-menu">
+        <span id="welcome-user">Welcome, <%= user %></span>
+        <div class="user-avatar"></div>
+      </div>
+    </header>
+
+    <!-- Main View -->
+    <main class="dashboard-main">
+      <h1 class="page-title">Make more. Keep more.</h1>
+      <p class="page-subtitle">Access radically simple tools to monetize your content and compete at scale.</p>
+
+      <div class="card-grid">
+        <!-- ... existing cards ... -->
+      </div>
+
+      <div class="dash-card" style="margin-top: 30px;">
+        <h3><i class="fa fa-line-chart"></i> Advanced Reporting</h3>
+        <p>Operational tracking of your recent interactions.</p>
+        <div id="user-reports-list" style="margin-top: 15px; font-size: 14px;">
+          <p>Loading activity reports...</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="js/utils.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!isLoggedIn()) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      const user = getUsername();
+      if (user) {
+        document.getElementById('welcome-user').innerText = `Welcome, ${user}`;
+      }
+
+      if (getUserRole() === 'admin') {
+        const sidebar = document.querySelector('.sidebar-nav');
+        const li = document.createElement('li');
+        li.innerHTML = '<a href="admin.html"><i class="fa fa-lock"></i> Admin Panel</a>';
+        sidebar.appendChild(li);
+      }
+
+      // Check for success messages in URL
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has('login')) {
+        showToast('Login successful! Welcome back.', 'success');
+      }
+
+      // Load User Reports
+      async function loadUserReports() {
+        try {
+          const reports = await safeFetch('/api/user/activities');
+          const list = document.getElementById('user-reports-list');
+          if (!reports || reports.length === 0) {
+            list.innerHTML = '<p style="color: #888;">No recent reports found.</p>';
+            return;
+          }
+          list.innerHTML = reports.map(r => `
+            <div style="padding: 10px; border-bottom: 1px solid #eee;">
+              <i class="fa fa-info-circle"></i> ${r.message} 
+              <small style="float: right; color: #999;">${new Date(r.created_at).toLocaleDateString()}</small>
+            </div>
+          `).join('');
+        } catch (err) {
+          document.getElementById('user-reports-list').innerHTML = '<p>Error loading reports.</p>';
+        }
+      }
+      loadUserReports();
+    });
+  </script>
+  <a href="/users/logout">Logout</a>
+
+  <h4>Hello <%= user %>
+  </h4>
+</body>
+
+</html>

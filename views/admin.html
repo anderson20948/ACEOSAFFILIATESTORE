@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aceos Admin - Pending Approvals</title>
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet">
+    <link rel="stylesheet" href="css/font-awesome.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="css/style.css">
+    <meta name="csrf-token" content="<%= csrfToken %>">
+    <!-- For product card styles maybe, or just inline -->
+    <style>
+        .product-card {
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+        }
+
+        .product-title {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .product-price {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body class="dashboard-body">
+
+    <!-- Sidebar -->
+    <aside id="dashboard-sidebar">
+        <div class="sidebar-header">
+            <a href="home.html" class="sidebar-brand">Aceos Admin</a>
+        </div>
+        <ul class="sidebar-nav">
+            <li><a href="dashboard-products.html"><i class="fa fa-th-large"></i> User Dashboard</a></li>
+            <li><a href="#" onclick="showSection('analytics')" id="link-analytics"><i class="fa fa-bar-chart"></i>
+                    Analytics</a></li>
+            <li><a href="#" onclick="showSection('pending')" id="link-pending" class="active"><i
+                        class="fa fa-clock-o"></i> Pending Approvals</a></li>
+            <li><a href="#" onclick="showSection('payments')" id="link-payments"><i class="fa fa-paypal"></i>
+                    Payments</a></li>
+            <li><a href="#" onclick="showSection('users')" id="link-users"><i class="fa fa-users"></i> Users</a></li>
+            <li><a href="#" onclick="showSection('system')" id="link-system"><i class="fa fa-cog"></i> System
+                    Management</a></li>
+        </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <div id="dashboard-content">
+        <!-- Topbar -->
+        <header class="dashboard-topbar">
+            <h2>Admin Dashboard</h2>
+            <div class="user-menu">
+                <span id="admin-name">Admin</span>
+                <div class="user-avatar"></div>
+                <button onclick="logout()" class="btn-danger"
+                    style="margin-left: 10px; font-size: 12px;">Logout</button>
+            </div>
+        </header>
+
+        <!-- Main View -->
+        <main class="dashboard-main">
+            <!-- Analytics Section -->
+            <div id="section-analytics" class="admin-section" style="display: none;">
+                <h1 class="page-title">System Analytics</h1>
+                <div class="stats-grid" id="stats-container">
+                    <!-- Stats loaded here -->
+                </div>
+
+                <h2 style="margin-top: 30px;">Recent Activity</h2>
+                <div class="activity-log" id="activity-log">
+                    <p>Loading activity logs...</p>
+                </div>
+            </div>
+
+            <!-- Pending Section -->
+            <div id="section-pending" class="admin-section">
+                <h1 class="page-title">Pending Products</h1>
+                <p class="page-subtitle">Review and approve products uploaded by affiliates.</p>
+                <div id="pending-list" class="card-grid" style="display: block;">
+                    <p>Loading pending products...</p>
+                </div>
+            </div>
+
+            <!-- Payments Section -->
+            <div id="section-payments" class="admin-section" style="display: none;">
+                <h1 class="page-title">Payment History</h1>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>User</th>
+                                <th>Product</th>
+                                <th>Amount</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="payment-list"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Users Section -->
+            <div id="section-users" class="admin-section" style="display: none;">
+                <h1 class="page-title">Registered Users</h1>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Joined</th>
+                            </tr>
+                        </thead>
+                        <tbody id="user-list"></tbody>
+                    </table>
+                </div>
+                <!-- System Management Section -->
+                <div id="section-system" class="admin-section" style="display: none;">
+                    <h1 class="page-title">System Management</h1>
+                    <p class="page-subtitle">Execute system configurations and upload necessary features.</p>
+
+                    <div class="dash-card" style="margin-bottom: 30px;">
+                        <h3><i class="fa fa-code"></i> JSON Configuration Executor</h3>
+                        <p>Execute system updates or configuration changes via JSON input.</p>
+                        <textarea id="json-input" class="form-control" rows="8"
+                            placeholder='{ "action": "update_config", "params": { ... } }'
+                            style="width: 100%; font-family: monospace;"></textarea>
+                        <button onclick="executeJson()" class="btn-primary" style="margin-top: 10px;">Execute
+                            JSON</button>
+                        <div id="json-result" style="margin-top: 10px; font-size: 13px;"></div>
+                    </div>
+
+                    <div class="dash-card">
+                        <h3><i class="fa fa-upload"></i> Feature Upload</h3>
+                        <p>Upload new system features or assets (ZIP/HTML/JS).</p>
+                        <input type="file" id="feature-upload" class="form-control" style="margin-bottom: 10px;">
+                        <button onclick="uploadFeature()" class="btn-dash">Upload & Install</button>
+                        <div id="upload-status" style="margin-top: 10px; font-size: 13px;"></div>
+                    </div>
+                </div>
+        </main>
+    </div>
+
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/admin-dashboard.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aceos Portal - Signal</title>
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet">
+    <link rel="stylesheet" href="css/font-awesome.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+</head>
+
+<body class="dashboard-body">
+
+    <aside id="dashboard-sidebar">
+        <div class="sidebar-header">
+            <a href="home.html" class="sidebar-brand">Aceos Portal</a>
+        </div>
+        <ul class="sidebar-nav">
+            <li><a href="dashboard-products.html"><i class="fa fa-th-large"></i> All Products</a></li>
+            <li><a href="dashboard-advertising.html"><i class="fa fa-bullhorn"></i> Advertising</a></li>
+            <li><a href="dashboard-commerce.html"><i class="fa fa-shopping-cart"></i> Commerce</a></li>
+            <li><a href="dashboard-signal.html" class="active"><i class="fa fa-signal"></i> Signal</a></li>
+            <li><a href="home.html"><i class="fa fa-home"></i> Back to Site</a></li>
+        </ul>
+    </aside>
+
+    <div id="dashboard-content">
+        <header class="dashboard-topbar">
+            <h2>Signal</h2>
+            <div class="user-menu">
+                <span>Welcome, User</span>
+                <div class="user-avatar"></div>
+            </div>
+        </header>
+
+        <main class="dashboard-main">
+            <div class="dash-card">
+                <h1 class="page-title">One Score. Total Clarity.</h1>
+                <p>With built-in benchmarks and actionable insights, optimize your ad experiences with the Inventory
+                    Score. A metric that breaks down what's helping or hurting ad performance, so you can improve in
+                    real time.</p>
+                <a href="javascript:void(0)" onclick="openSignalModal()" class="btn-dash">Request Access</a>
+            </div>
+
+            <div style="text-align: center; margin: 40px 0;">
+                <h3>How it works</h3>
+            </div>
+
+            <div class="card-grid" style="grid-template-columns: repeat(3, 1fr);">
+                <div style="text-align:center;">
+                    <div
+                        style="background:#ffd700; width:40px; height:40px; border-radius:50%; margin:0 auto 10px; line-height:40px; font-weight:bold;">
+                        1</div>
+                    <h4>Measure</h4>
+                    <p style="font-size:13px;">Implement Signal and start measuring your inventory's key performance
+                        indicators.</p>
+                </div>
+                <div style="text-align:center;">
+                    <div
+                        style="background:#ffd700; width:40px; height:40px; border-radius:50%; margin:0 auto 10px; line-height:40px; font-weight:bold;">
+                        2</div>
+                    <h4>Compare</h4>
+                    <p style="font-size:13px;">See how your site stacks up against industry benchmarks.</p>
+                </div>
+                <div style="text-align:center;">
+                    <div
+                        style="background:#ffd700; width:40px; height:40px; border-radius:50%; margin:0 auto 10px; line-height:40px; font-weight:bold;">
+                        3</div>
+                    <h4>Optimize</h4>
+                    <p style="font-size:13px;">Uncover actionable insights to drive more value from your supply.</p>
+                </div>
+            </div>
+
+            <h3 style="text-align:center; margin-top:50px;">What's included</h3>
+            <div class="card-grid" style="margin-top: 20px;">
+                <div class="dash-card">
+                    <h4><i class="fa fa-eye"></i> Ad quality measurements</h4>
+                    <p>Track your viewability, attention and ads-to-content ratio to benchmark your ad quality.</p>
+                </div>
+                <div class="dash-card">
+                    <h4><i class="fa fa-bar-chart"></i> Demand analytics</h4>
+                    <p>Measure and optimize your performance across all of your Prebid partners.</p>
+                </div>
+                <div class="dash-card">
+                    <h4><i class="fa fa-line-chart"></i> Benchmark against Aceos network</h4>
+                    <p>See how your performance compares to the market across 12 key metrics.</p>
+                </div>
+                <div class="dash-card">
+                    <h4><i class="fa fa-gift"></i> 100% Free</h4>
+                    <p>Free with your Aceos Prebid integration or with the Signal tag on your page.</p>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Request Access Modal -->
+    <div id="signalModal" class="modal">
+        <div class="modal-content" style="width: 900px; max-width: 95%;">
+            <div style="position: relative;">
+                <span class="close-btn" onclick="closeSignalModal()"
+                    style="position: absolute; right: 15px; top: 10px; z-index: 10;">&times;</span>
+
+                <div class="modal-split-layout">
+                    <!-- Left Panel -->
+                    <div class="modal-left-panel">
+                        <h3>Request Access to Signal</h3>
+                        <p>Signal empowers publishers to maximize revenue by leveraging real-time behavioral and
+                            attention data.</p>
+                        <ul>
+                            <li>Increase revenue by optimizing toward the impressions that buyers value most.</li>
+                            <li>Understand inventory health with real-time metrics like viewability, bid rate, and
+                                attention.</li>
+                            <li>Benchmark performance against market-wide data.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Right Panel (Form) -->
+                    <div class="modal-right-panel">
+                        <div id="signalFormView">
+                            <div class="signal-form-row">
+                                <div class="form-group">
+                                    <label>First Name*</label>
+                                    <input type="text" class="form-input" id="sigFirstName" onkeyup="checkSignalForm()">
+                                </div>
+                                <div class="form-group">
+                                    <label>Last Name*</label>
+                                    <input type="text" class="form-input" id="sigLastName" onkeyup="checkSignalForm()">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Email*</label>
+                                <input type="email" class="form-input" id="sigEmail" onkeyup="checkSignalForm()">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Company Name</label>
+                                <input type="text" class="form-input" id="sigCompany">
+                            </div>
+
+                            <div class="form-group">
+                                <label
+                                    style="font-weight: normal; display: flex; align-items: start; gap: 10px; font-size: 13px;">
+                                    <input type="checkbox" id="sigTerms" onchange="checkSignalForm()"
+                                        style="margin-top: 4px;">
+                                    <span>Yes, I agree to receive periodic emails related to products and services. I
+                                        accept the Privacy Policy.</span>
+                                </label>
+                            </div>
+
+                            <button id="btnSignalSubmit" class="btn-signal" onclick="submitSignalRequest()">Request
+                                Access</button>
+                        </div>
+
+                        <!-- Success View -->
+                        <div id="signalSuccessView" style="display: none; text-align: center; padding-top: 50px;">
+                            <i class="fa fa-envelope-open-o"
+                                style="font-size: 60px; color: #ffd700; margin-bottom: 20px;"></i>
+                            <h3>Request Sent!</h3>
+                            <p style="color: #666;">Thank you for your interest. Our team will review your request and
+                                get back to you shortly.</p>
+                            <button class="btn-dash" onclick="closeSignalModal()"
+                                style="margin-top: 20px;">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openSignalModal() {
+            document.getElementById('signalModal').style.display = 'block';
+            document.getElementById('signalFormView').style.display = 'block';
+            document.getElementById('signalSuccessView').style.display = 'none';
+        }
+
+        function closeSignalModal() {
+            document.getElementById('signalModal').style.display = 'none';
+        }
+
+        function checkSignalForm() {
+            var fName = document.getElementById('sigFirstName').value;
+            var lName = document.getElementById('sigLastName').value;
+            var email = document.getElementById('sigEmail').value;
+            var terms = document.getElementById('sigTerms').checked;
+            var btn = document.getElementById('btnSignalSubmit');
+
+            if (fName && lName && email && terms) {
+                btn.classList.add('active');
+                btn.disabled = false;
+            } else {
+                btn.classList.remove('active');
+                btn.disabled = true;
+            }
+        }
+
+        function submitSignalRequest() {
+            var btn = document.getElementById('btnSignalSubmit');
+            if (btn.disabled) return;
+
+            // Simulate API call
+            btn.innerHTML = 'Sending...';
+            setTimeout(function () {
+                document.getElementById('signalFormView').style.display = 'none';
+                document.getElementById('signalSuccessView').style.display = 'block';
+                btn.innerHTML = 'Request Access'; // Reset for next time
+            }, 1000);
+        }
+
+        // Initialize button state
+        document.addEventListener('DOMContentLoaded', function () {
+            checkSignalForm();
+        });
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aceos Portal - All Products</title>
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet">
+    <link rel="stylesheet" href="css/font-awesome.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <meta name="csrf-token" content="<%= csrfToken %>">
+</head>
+
+<body class="dashboard-body">
+
+    <!-- Sidebar -->
+    <aside id="dashboard-sidebar">
+        <div class="sidebar-header">
+            <a href="home.html" class="sidebar-brand">Aceos Portal</a>
+        </div>
+        <ul class="sidebar-nav">
+            <li><a href="dashboard-products.html" class="active"><i class="fa fa-th-large"></i> All Products</a></li>
+            <li><a href="dashboard-advertising.html"><i class="fa fa-bullhorn"></i> Advertising</a></li>
+            <li><a href="dashboard-commerce.html"><i class="fa fa-shopping-cart"></i> Commerce</a></li>
+            <li><a href="dashboard-signal.html"><i class="fa fa-signal"></i> Signal</a></li>
+            <li><a href="home.html"><i class="fa fa-home"></i> Back to Site</a></li>
+        </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <div id="dashboard-content">
+        <!-- Topbar -->
+        <header class="dashboard-topbar">
+            <h2>Dashboard</h2>
+            <div class="user-menu">
+                <span id="welcome-user">Welcome, Loading...</span>
+                <div class="user-avatar"></div>
+            </div>
+        </header>
+
+        <!-- Main View -->
+        <main class="dashboard-main">
+            <h1 class="page-title">Make more. Keep more.</h1>
+            <p class="page-subtitle">Radically simple tools to efficiently monetize your content, understand the value
+                of your most engaged audiences, and compete at scale.</p>
+
+            <div class="card-grid">
+                <!-- Ad Exchange Card -->
+                <div class="dash-card">
+                    <h3><i class="fa fa-exchange"></i> Ad Exchange</h3>
+                    <p>An omnichannel pipeline of top-tier advertising demand.</p>
+                    <ul>
+                        <li>Integrations with major DSPs</li>
+                        <li>Machine learning algorithms to automate yield optimization</li>
+                        <li>Premium CPMs through top advertisers and agencies</li>
+                        <li>Private and open-auction deals</li>
+                    </ul>
+                    </ul>
+                    <a href="javascript:void(0)" onclick="openPropertyModal()" class="btn-dash">Get started</a>
+                </div>
+
+                <!-- Commerce Card -->
+                <div class="dash-card">
+                    <h3><i class="fa fa-tags"></i> Commerce</h3>
+                    <p>All-in-one link creation toolset with access to 50k+ merchants, real-time analytics, and more.
+                    </p>
+                    <ul>
+                        <li>Connect to top CPA and CPC merchant programs</li>
+                        <li>Integrate direct networks for seamless management</li>
+                        <li>Optimize links automatically for higher revenue</li>
+                        <li>Comparison tools to increase conversion rates</li>
+                    </ul>
+                    <a href="dashboard-commerce.html" class="btn-dash">Get started</a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Submit Property Modal -->
+    <div id="propertyModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Submit a new property</h2>
+                <span class="close-btn" onclick="closePropertyModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+
+                <!-- View 1: Selection -->
+                <div id="view-selection">
+                    <div class="selection-card" onclick="showForm('product')">
+                        <h3>Product</h3>
+                        <p>Upload a product to the marketplace for affiliates to promote.</p>
+                        <span class="link-arrow">Continue &rarr;</span>
+                    </div>
+                    <div class="selection-card" onclick="showForm('website')">
+                        <h3>Website</h3>
+                        <p>For web display and video advertising. Submit one or multiple domains for approval.</p>
+                        <span class="link-arrow">Continue &rarr;</span>
+                    </div>
+                    <!-- App option removed or kept as per preference, keeping it simple -->
+                </div>
+
+                <!-- View 2: Website Form -->
+                <div id="view-website-form" style="display:none;">
+                    <!-- ... (keeping existing website form if needed, or just hiding it) ... -->
+                    <!-- Actually I will just replace the website form content logic with Product Upload if I want to enforce it, 
+                          but better to ADD a new view for Product. -->
+                </div>
+
+                <!-- View: Product Form -->
+                <div id="view-product-form" style="display:none;">
+                    <form id="productUploadForm" onsubmit="event.preventDefault(); submitProduct();">
+                        <div class="form-group">
+                            <label for="prodTitle">Product Title</label>
+                            <input type="text" id="prodTitle" name="title" class="form-input"
+                                placeholder="e.g. Awesome Gadget" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="prodDesc">Description</label>
+                            <textarea id="prodDesc" name="description" class="form-input" rows="3" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="prodPrice">Price ($)</label>
+                            <input type="number" id="prodPrice" name="price" class="form-input" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="prodImage">Product Image</label>
+                            <input type="file" id="prodImage" name="image" class="form-input" accept="image/*">
+                        </div>
+
+                        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                            <button type="button" class="btn-secondary" onclick="resetModal()">Back</button>
+                            <button type="submit" class="btn-dash" style="margin-top:0;">Upload Product</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- View 3: App Form -->
+                <div id="view-app-form" style="display:none;">
+                    <div class="form-group">
+                        <label for="appName">App Name</label>
+                        <input type="text" id="appName" class="form-input" placeholder="My Awesome Game">
+                    </div>
+                    <div class="form-group">
+                        <label for="appBundleId">App Bundle ID / Package Name</label>
+                        <input type="text" id="appBundleId" class="form-input" placeholder="com.company.appname">
+                    </div>
+                    <div class="form-group">
+                        <label for="appStoreUrl">App Store / Play Store URL</label>
+                        <input type="text" id="appStoreUrl" class="form-input"
+                            placeholder="https://play.google.com/store/apps/details?id=...">
+                    </div>
+
+                    <div class="form-group">
+                        <label style="font-weight: normal; display: flex; align-items: start; gap: 10px;">
+                            <input type="checkbox" id="appTermsCheck" style="margin-top: 4px;">
+                            <span>I agree to the <a href="#" style="color: blue;">Advertising Terms and
+                                    Conditions</a>.</span>
+                        </label>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                        <button class="btn-secondary" onclick="resetModal()">Back</button>
+                        <button class="btn-dash" style="margin-top:0;" onclick="submitApp()">Submit App</button>
+                    </div>
+                </div>
+
+                <!-- View 4: Connection Instructions -->
+                <div id="view-connection" style="display:none;">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <i class="fa fa-check-circle" style="color: green; font-size: 40px;"></i>
+                        <h3 id="connectionTitle">Site Submitted!</h3>
+                        <p id="connectionSubtitle">To verify ownership and start tracking, add this code to the
+                            <code>&lt;head&gt;</code> of your site.
+                        </p>
+                    </div>
+
+                    <label id="codeLabel">Verification Tag:</label>
+                    <div class="code-box" id="verificationCode">
+                        &lt;script src="https://aceos-affiliate.com/tag.js?id=ACE-12345"&gt;&lt;/script&gt;
+                    </div>
+
+                    <div style="margin-top: 20px; text-align: right;">
+                        <button class="btn-dash" onclick="closePropertyModal()">Done</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        // Check Login
+        if (!isLoggedIn()) {
+            window.location.href = '/login';
+        }
+
+        const user = getUsername();
+        if (user) {
+            document.getElementById('welcome-user').innerText = `Welcome, ${user}`;
+        }
+
+        if (localStorage.getItem('role') === 'admin') {
+            const sidebar = document.querySelector('.sidebar-nav');
+            const li = document.createElement('li');
+            li.innerHTML = '<a href="/admin"><i class="fa fa-lock"></i> Admin Panel</a>';
+            sidebar.appendChild(li);
+        }
+
+        async function submitProduct() {
+            const form = document.getElementById('productUploadForm');
+            const formData = new FormData(form);
+            const token = localStorage.getItem('token');
+
+            try {
+                const response = await fetch('/api/products/upload', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error);
+
+                alert('Product Uploaded Successfully! Pending Approval.');
+                closePropertyModal();
+            } catch (err) {
+                alert(err.message);
+            }
+        }
+
+        function openPropertyModal() {
+            document.getElementById('propertyModal').style.display = 'block';
+            resetModal();
+        }
+
+        function closePropertyModal() {
+            document.getElementById('propertyModal').style.display = 'none';
+        }
+
+        window.onclick = function (event) {
+            var modal = document.getElementById('propertyModal');
+            if (event.target == modal) {
+                closePropertyModal();
+            }
+        }
+
+        function resetModal() {
+            document.getElementById('modalTitle').innerText = 'Submit a new property';
+            document.getElementById('view-selection').style.display = 'block';
+            document.getElementById('view-product-form').style.display = 'none';
+            // document.getElementById('view-website-form').style.display = 'none'; // Deleted
+            // document.getElementById('view-app-form').style.display = 'none'; // Deleted
+        }
+
+        function showForm(type) {
+            document.getElementById('view-selection').style.display = 'none';
+            if (type === 'product') {
+                document.getElementById('modalTitle').innerText = 'Upload Product';
+                document.getElementById('view-product-form').style.display = 'block';
+            }
+        }
+    </script>
+
+</html>

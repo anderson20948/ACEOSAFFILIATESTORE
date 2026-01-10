@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Bamburi Affiliate</title>
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600%7CPoppins:300,400,500,600,900"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/font-awesome.css">
+    <link rel="stylesheet" href="css/bootstrap.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/colors.css">
+    <meta name="csrf-token" content="<%= csrfToken %>">
+    <style>
+        .login-page {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: #fff;
+            padding: 50px;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+        }
+
+        .login-container .logo {
+            margin-bottom: 30px;
+        }
+
+        .login-container h2 {
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .login-container p {
+            color: #777;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-control {
+            height: 50px;
+            border-radius: 8px;
+            border: 1px solid rgba(221, 221, 221, 0.5);
+            padding: 10px 15px;
+            background: transparent;
+            color: #333;
+        }
+
+        .form-control:focus {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #ff5e14;
+            box-shadow: none;
+            outline: none;
+        }
+
+        .btn-login {
+            width: 100%;
+            height: 50px;
+            background: #ff5e14;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn-login:hover {
+            background: #e04d00;
+            transform: translateY(-2px);
+        }
+
+        .footer-links {
+            margin-top: 25px;
+            font-size: 14px;
+            color: #777;
+        }
+
+        .footer-links a {
+            color: #ff5e14;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-page">
+        <div class="login-container">
+            <div class="logo">
+                <a href="/"><img src="images/logo.png" alt="Bamburi" width="150"></a>
+            </div>
+            <h2>Create Account</h2>
+            <p>Join our affiliate network today</p>
+
+            <form id="registerForm">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <!-- Step 1: Account Info -->
+                <div class="wizard-step" id="step1">
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" id="regName" class="form-control" placeholder="John Doe" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" id="regEmail" class="form-control" placeholder="example@mail.com" required>
+                    </div>
+                    <div class="text-center">
+                        <button type="button" class="btn-login" onclick="nextStep(2)">Next Step</button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Password -->
+                <div class="wizard-step" id="step2" style="display: none;">
+                    <div class="form-group">
+                        <label>Password</label>
+                        <div style="position: relative;">
+                            <input type="password" id="regPass" class="form-control" placeholder="Password" required>
+                            <i class="fa fa-eye toggle-password"
+                                style="position: absolute; right: 15px; top: 15px; cursor: pointer; color: #777;"></i>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Confirm Password</label>
+                        <div style="position: relative;">
+                            <input type="password" id="regConfirm" class="form-control" placeholder="Confirm Password"
+                                required>
+                            <i class="fa fa-eye toggle-password"
+                                style="position: absolute; right: 15px; top: 15px; cursor: pointer; color: #777;"></i>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-xs-6">
+                            <button type="button" class="btn-login" style="background: #6c757d;"
+                                onclick="nextStep(1)">Back</button>
+                        </div>
+                        <div class="col-xs-6">
+                            <button type="submit" class="btn-login">Register Now</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+            <div class="footer-links">
+                Already have an account? <a href="login.html">Sign In</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/jquery.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        document.getElementById('regForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await handleRegister();
+        });
+    </script>
+</body>
+
+</html>
