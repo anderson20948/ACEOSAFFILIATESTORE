@@ -60,15 +60,11 @@ document.addEventListener('DOMContentLoaded', () => {
  */
 async function safeFetch(url, options = {}) {
     const token = getToken();
-    // Get CSRF token from meta tag or cookie if needed for non-GET
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
     const defaultHeaders = {
         'Content-Type': 'application/json',
         // Only add Authorization header if a token exists
-        ...(token && { 'Authorization': `Bearer ${token}` }),
-        // Only add X-CSRF-Token if it exists and is not a GET request
-        ...(csrfToken && options.method !== 'GET' && { 'X-CSRF-Token': csrfToken })
+        ...(token && { 'Authorization': `Bearer ${token}` })
     };
 
     const config = {

@@ -88,4 +88,99 @@ router.post('/generate-link', async (req, res) => {
     }
 });
 
+// Get Commission History
+router.get('/commissions', async (req, res) => {
+    const userId = req.user.id;
+    const { status, limit = 20, offset = 0 } = req.query;
+
+    try {
+        let query = 'SELECT * FROM commissions WHERE user_id = $1';
+        let params = [userId];
+
+        if (status) {
+            query += ' AND status = $2';
+            params.push(status);
+        }
+
+        query += ' ORDER BY created_at DESC LIMIT $' + (params.length + 1) + ' OFFSET $' + (params.length + 2);
+        params.push(limit, offset);
+
+        const commissions = await db.query(query, params);
+        res.json(commissions.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Error fetching commissions' });
+    }
+});
+
+// Request Commission Payout (Admin approval needed)
+router.post('/request-payout', async (req, res) => {
+    const userId = req.user.id;
+    const { amount } = req.body;
+
+    if (!amount || amount <= 0) {
+        return res.status(400).json({ error: 'Valid amount required' });
+    }
+
+    try {
+        // Check available balance
+        const balanceResult = await db.query(
+            'SELECT SUM(amount) as total FROM commissions WHERE user_id = $1 AND status = $2',
+            [userId, 'pending']
+        );
+
+        const availableBalance = parseFloat(balanceResult.rows[0].total || 0);
+
+        if (amount > availableBalance) {
+            return res.status(400).json({ error: 'Insufficient balance for payout request' });
+        }
+
+        // Create payout request (could be stored in a separate table or marked for admin review)
+        await db.query(
+            'INSERT INTO activities (message, created_at) VALUES ($1, NOW())',
+            [`Payout request: $${amount} by user ${userId}`]
+        );
+
+        res.json({ message: 'Payout request submitted for review' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Error processing payout request' });
+    }
+});
+
+// Get Revenue Analytics
+router.get('/analytics', async (req, res) => {
+    const userId = req.user.id;
+
+    try {
+        // Monthly earnings
+        const monthlyEarnings = await db.query(`
+            SELECT DATE_TRUNC('month', created_at) as month, SUM(amount) as earnings
+            FROM commissions
+            WHERE user_id = $1 AND status = 'paid'
+            GROUP BY DATE_TRUNC('month', created_at)
+            ORDER BY month DESC
+            LIMIT 12`, [userId]);
+
+        // Top performing products
+        const topProducts = await db.query(`
+            SELECT p.title, COUNT(tl.id) as clicks, SUM(c.amount) as earnings
+            FROM products p
+            JOIN tracking_links tl ON p.id = tl.product_id
+            LEFT JOIN commissions c ON c.user_id = $1
+            WHERE tl.user_id = $1
+            GROUP BY p.id, p.title
+            ORDER BY earnings DESC
+            LIMIT 5`, [userId]);
+
+        res.json({
+            monthlyEarnings: monthlyEarnings.rows,
+            topProducts: topProducts.rows
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Error fetching analytics' });
+    }
+});
+
 module.exports = router;

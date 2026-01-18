@@ -165,4 +165,102 @@ router.post('/upload-feature', upload.single('file'), async (req, res) => {
     }
 });
 
+// Commission Management
+router.get('/commissions', checkSuperAdmin, async (req, res) => {
+    const { status, userId } = req.query;
+
+    try {
+        let query = `
+            SELECT c.*, u.name as affiliate_name, u.email as affiliate_email
+            FROM commissions c
+            JOIN users u ON c.user_id = u.id
+        `;
+        let params = [];
+
+        if (status) {
+            query += ' WHERE c.status = $1';
+            params.push(status);
+        }
+
+        if (userId) {
+            query += (params.length > 0 ? ' AND' : ' WHERE') + ' c.user_id = $' + (params.length + 1);
+            params.push(userId);
+        }
+
+        query += ' ORDER BY c.created_at DESC';
+
+        const commissions = await db.query(query, params);
+        res.json(commissions.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Error fetching commissions' });
+    }
+});
+
+// Approve Commission Payout
+router.post('/approve-commission/:commissionId', checkSuperAdmin, async (req, res) => {
+    const { commissionId } = req.params;
+
+    try {
+        const result = await db.query(
+            'UPDATE commissions SET status = $1 WHERE id = $2 RETURNING *',
+            ['paid', commissionId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Commission not found' });
+        }
+
+        // Log the approval
+        await db.query(
+            'INSERT INTO activities (message, created_at) VALUES ($1, NOW())',
+            [`Commission payout approved: $${result.rows[0].amount} for user ${result.rows[0].user_id}`]
+        );
+
+        res.json({ message: 'Commission approved and marked as paid', commission: result.rows[0] });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Error approving commission' });
+    }
+});
+
+// Get Revenue Analytics for Admin
+router.get('/revenue-analytics', checkSuperAdmin, async (req, res) => {
+    try {
+        // Total revenue
+        const totalRevenue = await db.query('SELECT SUM(amount) FROM payments WHERE status = $1', ['completed']);
+
+        // Total commissions paid
+        const totalCommissions = await db.query('SELECT SUM(amount) FROM commissions WHERE status = $1', ['paid']);
+
+        // Platform profit (revenue - commissions)
+        const platformProfit = (parseFloat(totalRevenue.rows[0].sum || 0) - parseFloat(totalCommissions.rows[0].sum || 0));
+
+        // Monthly breakdown
+        const monthlyData = await db.query(`
+            SELECT DATE_TRUNC('month', created_at) as month,
+                   SUM(CASE WHEN table_name = 'payments' THEN amount ELSE 0 END) as revenue,
+                   SUM(CASE WHEN table_name = 'commissions' THEN amount ELSE 0 END) as commissions
+            FROM (
+                SELECT created_at, amount, 'payments' as table_name FROM payments WHERE status = 'completed'
+                UNION ALL
+                SELECT created_at, amount, 'commissions' as table_name FROM commissions WHERE status = 'paid'
+            ) combined
+            GROUP BY DATE_TRUNC('month', created_at)
+            ORDER BY month DESC
+            LIMIT 12
+        `);
+
+        res.json({
+            totalRevenue: totalRevenue.rows[0].sum || 0,
+            totalCommissions: totalCommissions.rows[0].sum || 0,
+            platformProfit: platformProfit,
+            monthlyData: monthlyData.rows
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Error fetching revenue analytics' });
+    }
+});
+
 module.exports = router;

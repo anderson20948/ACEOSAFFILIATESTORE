@@ -1,4 +1,5 @@
 const LocalStrategy = require("passport-local").Strategy;
+const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const { pool } = require("./dbConfig");
 const bcrypt = require("bcrypt");
 
@@ -27,13 +28,13 @@ function initialize(passport) {
               return done(null, user);
             } else {
               //password is incorrect
-              return done(null, false, { message: "Password is incorrect" });
+              return done(null, false, { message: "Invalid choice" });
             }
           });
         } else {
           // No user
           return done(null, false, {
-            message: "No user with that email address"
+            message: "Invalid choice"
           });
         }
       }
@@ -44,6 +45,36 @@ function initialize(passport) {
     new LocalStrategy(
       { usernameField: "email", passwordField: "password" },
       authenticateUser
+    )
+  );
+
+  // Google OAuth Strategy
+  passport.use(
+    new GoogleStrategy(
+      {
+        clientID: process.env.GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID",
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET || "YOUR_GOOGLE_CLIENT_SECRET",
+        callbackURL: "/auth/google/callback"
+      },
+      async (accessToken, refreshToken, profile, done) => {
+        try {
+          // Check if user already exists with this Google ID
+          let user = await pool.query("SELECT * FROM users WHERE email = $1", [profile.emails[0].value]);
+
+          if (user.rows.length === 0) {
+            // Create new user
+            const newUser = await pool.query(
+              "INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING *",
+              [profile.displayName, profile.emails[0].value, 'google-oauth-' + profile.id, 'affiliate']
+            );
+            user = newUser;
+          }
+
+          return done(null, user.rows[0]);
+        } catch (err) {
+          return done(err, null);
+        }
+      }
     )
   );
   // Stores user details inside session. serializeUser determines which data of the user

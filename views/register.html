@@ -11,7 +11,6 @@
     <link rel="stylesheet" href="css/bootstrap.css">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="css/colors.css">
-    <meta name="csrf-token" content="<%= csrfToken %>">
     <style>
         .login-page {
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
@@ -115,7 +114,6 @@
             <p>Join our affiliate network today</p>
 
             <form id="regForm">
-                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <!-- Step 1: Account Info -->
                 <div class="wizard-step" id="step1">
                     <div class="form-group">

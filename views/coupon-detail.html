@@ -193,7 +193,12 @@
                                         <footer class="footer">
                                             <a href="#" class="btn-primary text-center text-uppercase">Get Coupon
                                                 Code</a>
-                                            <div id="payment-status" style="margin-top: 15px;"></div>
+
+                                            <!-- Real-time Payment Status Display -->
+                                            <div id="payment-status" class="payment-status-container" style="margin-top: 15px; min-height: 30px;">
+                                                <div class="status-message" style="padding: 8px; border-radius: 4px; font-size: 14px; display: none;"></div>
+                                            </div>
+
                                             <div class="amount-container" style="margin-bottom: 15px;">
                                                 <label for="payment-amount"
                                                     style="display: block; font-weight: bold; margin-bottom: 5px;">Enter
@@ -203,7 +208,24 @@
                                                     style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                                                 <small style="color: #666;">Minimum: $0.10</small>
                                             </div>
+
+                                            <!-- PayPal Login Guidance -->
+                                            <div class="paypal-login-notice" style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 5px; padding: 10px; margin-bottom: 15px; font-size: 13px;">
+                                                <i class="fa fa-info-circle" style="color: #0070ba; margin-right: 5px;"></i>
+                                                <strong>Existing PayPal users:</strong> Click the PayPal button below to login with your PayPal account and pay directly. No new account creation needed!
+                                            </div>
+
                                             <div id="paypal-button-container" style="margin-top: 10px;"></div>
+
+                                            <!-- Payment Method Brands -->
+                                            <div class="payment-brands" style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+                                                <span style="font-size: 12px; color: #666; margin-right: 10px;">Secure payments via:</span>
+                                                <img src="https://www.paypalobjects.com/webstatic/en_US/i/buttons/PP_logo_h_100x26.png" alt="PayPal" style="height: 20px;">
+                                                <img src="https://developers.google.com/pay/api/images/brand-guidelines/google-pay-logo.png" alt="Google Pay" style="height: 20px;">
+                                                <img src="https://js.stripe.com/v3/fingerprinted/img/visa-9fda4c37ea31e177468c9e48dd13256e.svg" alt="Visa" style="height: 20px;">
+                                                <img src="https://js.stripe.com/v3/fingerprinted/img/mastercard-4d8844094130711885b5e41b28c9848f.svg" alt="Mastercard" style="height: 20px;">
+                                            </div>
+
                                             <ul class="list-unstyled social-network">
                                                 <li><a href="#"><i class="fa fa-facebook"></i></a></li>
                                                 <li><a href="#"><i class="fa fa-twitter"></i></a></li>

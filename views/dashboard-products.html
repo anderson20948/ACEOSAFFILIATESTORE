@@ -8,7 +8,6 @@
     <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet">
     <link rel="stylesheet" href="css/font-awesome.css">
     <link rel="stylesheet" href="css/dashboard.css">
-    <meta name="csrf-token" content="<%= csrfToken %>">
 </head>
 
 <body class="dashboard-body">
@@ -23,6 +22,7 @@
             <li><a href="dashboard-advertising.html"><i class="fa fa-bullhorn"></i> Advertising</a></li>
             <li><a href="dashboard-commerce.html"><i class="fa fa-shopping-cart"></i> Commerce</a></li>
             <li><a href="dashboard-signal.html"><i class="fa fa-signal"></i> Signal</a></li>
+            <li id="admin-panel-link" style="display: none;"><a href="admin.html"><i class="fa fa-cogs"></i> Admin Panel</a></li>
             <li><a href="home.html"><i class="fa fa-home"></i> Back to Site</a></li>
         </ul>
     </aside>
@@ -261,6 +261,20 @@
                 document.getElementById('view-product-form').style.display = 'block';
             }
         }
+
+        // Check if user is admin and show admin panel link
+        document.addEventListener('DOMContentLoaded', function() {
+            const userRole = localStorage.getItem('role');
+            const adminPanelLink = document.getElementById('admin-panel-link');
+
+            if (userRole === 'admin') {
+                adminPanelLink.style.display = 'block';
+            }
+
+            // Set welcome message
+            const username = localStorage.getItem('username') || 'User';
+            document.getElementById('welcome-user').innerText = `Welcome, ${username}`;
+        });
     </script>
 
 </html>
