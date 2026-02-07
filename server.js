@@ -195,18 +195,25 @@ app.get("/index", (req, res) => {
   res.render("index");
 });
 
-app.get("/users/register", checkAuthenticated, (req, res) => {
+app.get("/users/register", ensureGuest, (req, res) => {
   res.render("register");
 });
 
-app.get("/users/login", checkAuthenticated, (req, res) => {
+app.get("/users/login", ensureGuest, (req, res) => {
   // flash sets a messages variable. passport sets the error message
   res.render("login");
 });
 
-app.get("/users/dashboard", checkNotAuthenticated, (req, res) => {
+app.get("/users/dashboard", ensureAuthenticated, (req, res) => {
   console.log(req.isAuthenticated());
   res.render("dashboard", { user: req.user.name });
+});
+
+app.get("/dashboard", ensureAuthenticated, (req, res) => {
+  if (isSuperAdmin(req.user)) {
+    return res.redirect("/admin.html");
+  }
+  res.redirect("/users/dashboard");
 });
 
 app.get("/users/logout", (req, res, next) => {
@@ -263,17 +270,29 @@ app.post("/users/register", async (req, res) => {
           });
         } else {
           pool.query(
-            `INSERT INTO users (name, email, password)
-                VALUES ($1, $2, $3)
+            `INSERT INTO users (name, email, password, role)
+                VALUES ($1, $2, $3, $4)
                 RETURNING id, password`,
-            [name, email, hashedPassword],
-            (err, results) => {
+            [name, email, hashedPassword, "affiliate"],
+            async (err, results) => {
               if (err) {
-                throw err;
+                console.error("Registration insertion error:", err);
+                return res.render("register", { message: "An error occurred during registration. Please try again." });
               }
-              console.log(results.rows);
-              req.flash("success_msg", "You are now registered. Please log in");
-              res.redirect("/users/login");
+
+              const newUser = results.rows[0];
+              console.log("New user registered:", newUser.id);
+
+              // Auto-login after registration
+              req.logIn(newUser, (err) => {
+                if (err) {
+                  console.error("Auto-login error:", err);
+                  req.flash("success_msg", "Registration successful! Please log in.");
+                  return res.redirect("/users/login");
+                }
+                req.flash("success_msg", "Registration successful! Welcome to your dashboard.");
+                res.redirect("/dashboard");
+              });
             }
           );
         }
@@ -291,11 +310,8 @@ app.post("/users/login", (req, res, next) => {
     }
     req.logIn(user, (err) => {
       if (err) { return next(err); }
-      // Redirect based on role
-      if (isSuperAdmin(user)) {
-        return res.redirect("/admin.html");
-      }
-      return res.redirect("/dashboard-products.html");
+      // Redirect to central dashboard route for role-based logic
+      return res.redirect("/dashboard");
     });
   })(req, res, next);
 });
@@ -308,11 +324,8 @@ app.get("/auth/google",
 app.get("/auth/google/callback",
   passport.authenticate("google", { failureRedirect: "/login" }),
   (req, res) => {
-    // Successful authentication, redirect to dashboard
-    if (isSuperAdmin(req.user)) {
-      return res.redirect("/admin.html");
-    }
-    res.redirect("/dashboard-products.html");
+    // Successful authentication, redirect to central dashboard
+    res.redirect("/dashboard");
   }
 );
 
@@ -790,17 +803,17 @@ app.get("/api/setup-admin", async (req, res) => {
   }
 });
 
-function checkAuthenticated(req, res, next) {
+function ensureGuest(req, res, next) {
   if (req.isAuthenticated()) {
     if (isSuperAdmin(req.user)) {
       return res.redirect("/admin.html");
     }
-    return res.redirect("/dashboard-products.html");
+    return res.redirect("/users/dashboard");
   }
   next();
 }
 
-function checkNotAuthenticated(req, res, next) {
+function ensureAuthenticated(req, res, next) {
   if (req.isAuthenticated()) {
     return next();
   }
