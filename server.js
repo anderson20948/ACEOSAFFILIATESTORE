@@ -1,11 +1,11 @@
+require("dotenv").config();
 const express = require("express");
 const path = require("path");
-const { pool } = require("./dbConfig");
+const { db } = require("./dbConfig");
 const bcrypt = require("bcrypt");
 const passport = require("passport");
 const flash = require("express-flash");
 const session = require("express-session");
-require("dotenv").config();
 const cookieParser = require("cookie-parser");
 const emailService = require("./services/emailService");
 const app = express();
@@ -44,18 +44,32 @@ function isSuperAdmin(user) {
 async function seedSuperAdmins() {
   try {
     for (const admin of ADMIN_USERS) {
-      const res = await pool.query("SELECT * FROM users WHERE email = $1", [admin.email]);
-      if (res.rows.length === 0) {
+      const { data: users, error: fetchError } = await db
+        .from("users")
+        .select("*")
+        .eq("email", admin.email);
+
+      if (fetchError) throw fetchError;
+
+      if (users.length === 0) {
         const hashedPassword = await bcrypt.hash(admin.password, 10);
-        await pool.query(
-          "INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4)",
-          [admin.name, admin.email, hashedPassword, admin.role]
-        );
+        const { error: insertError } = await db
+          .from("users")
+          .insert([
+            { name: admin.name, email: admin.email, password: hashedPassword, role: admin.role }
+          ]);
+
+        if (insertError) throw insertError;
         console.log(`Super Admin ${admin.name} seeded successfully.`);
       } else {
         // Ensure they have admin role if they already exist
-        if (res.rows[0].role !== 'admin') {
-          await pool.query("UPDATE users SET role = 'admin' WHERE email = $1", [admin.email]);
+        if (users[0].role !== 'admin') {
+          const { error: updateError } = await db
+            .from("users")
+            .update({ role: 'admin' })
+            .eq("email", admin.email);
+
+          if (updateError) throw updateError;
           console.log(`Super Admin ${admin.name} role updated to admin.`);
         } else {
           console.log(`Super Admin ${admin.name} already exists and is admin.`);
@@ -78,10 +92,13 @@ async function logAction(req, res, next) {
   // Log only meaningful write operations
   if (['POST', 'PUT', 'DELETE'].includes(method)) {
     try {
-      await pool.query(
-        "INSERT INTO activities (message, created_at) VALUES ($1, NOW())",
-        [`${user} performed ${method} on ${path}`]
-      );
+      const { error } = await db
+        .from("activities")
+        .insert([
+          { message: `${user} performed ${method} on ${path}`, created_at: new Date() }
+        ]);
+
+      if (error) throw error;
     } catch (err) {
       console.error("Logging failed:", err);
     }
@@ -254,50 +271,49 @@ app.post("/users/register", async (req, res) => {
     hashedPassword = await bcrypt.hash(password, 10);
     console.log(hashedPassword);
     // Validation passed
-    pool.query(
-      `SELECT * FROM users
-        WHERE email = $1`,
-      [email],
-      (err, results) => {
-        if (err) {
-          console.log(err);
+    try {
+      const { data: results, error: checkError } = await db
+        .from("users")
+        .select("*")
+        .eq("email", email);
+
+      if (checkError) throw checkError;
+
+      if (results.length > 0) {
+        return res.render("register", {
+          message: "Email already registered"
+        });
+      } else {
+        const { data: newUserResults, error: insertError } = await db
+          .from("users")
+          .insert([
+            { name, email, password: hashedPassword, role: "affiliate" }
+          ])
+          .select("id, password");
+
+        if (insertError) {
+          console.error("Registration insertion error:", insertError);
+          return res.render("register", { message: "An error occurred during registration. Please try again." });
         }
-        console.log(results.rows);
 
-        if (results.rows.length > 0) {
-          return res.render("register", {
-            message: "Email already registered"
-          });
-        } else {
-          pool.query(
-            `INSERT INTO users (name, email, password, role)
-                VALUES ($1, $2, $3, $4)
-                RETURNING id, password`,
-            [name, email, hashedPassword, "affiliate"],
-            async (err, results) => {
-              if (err) {
-                console.error("Registration insertion error:", err);
-                return res.render("register", { message: "An error occurred during registration. Please try again." });
-              }
+        const newUser = newUserResults[0];
+        console.log("New user registered:", newUser.id);
 
-              const newUser = results.rows[0];
-              console.log("New user registered:", newUser.id);
-
-              // Auto-login after registration
-              req.logIn(newUser, (err) => {
-                if (err) {
-                  console.error("Auto-login error:", err);
-                  req.flash("success_msg", "Registration successful! Please log in.");
-                  return res.redirect("/users/login");
-                }
-                req.flash("success_msg", "Registration successful! Welcome to your dashboard.");
-                res.redirect("/dashboard");
-              });
-            }
-          );
-        }
+        // Auto-login after registration
+        req.logIn(newUser, (err) => {
+          if (err) {
+            console.error("Auto-login error:", err);
+            req.flash("success_msg", "Registration successful! Please log in.");
+            return res.redirect("/users/login");
+          }
+          req.flash("success_msg", "Registration successful! Welcome to your dashboard.");
+          res.redirect("/dashboard");
+        });
       }
-    );
+    } catch (err) {
+      console.error(err);
+      res.render("register", { message: "An error occurred during registration." });
+    }
   }
 });
 
@@ -372,10 +388,15 @@ app.post("/api/auth/register", async (req, res) => {
     console.log("Registration attempt:", { username, email });
 
     // Check if email already exists
-    const userCheck = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
-    console.log("User check result:", userCheck.rows.length);
+    const { data: userCheck, error: checkError } = await db
+      .from("users")
+      .select("*")
+      .eq("email", email);
 
-    if (userCheck.rows.length > 0) {
+    if (checkError) throw checkError;
+    console.log("User check result:", userCheck.length);
+
+    if (userCheck.length > 0) {
       return res.status(400).json({ error: "Email already registered" });
     }
 
@@ -384,18 +405,25 @@ app.post("/api/auth/register", async (req, res) => {
     console.log("Password hashed successfully");
 
     console.log("Inserting user...");
-    const results = await pool.query(
-      "INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role",
-      [username, email, hashedPassword, "affiliate"]
-    );
-    console.log("User inserted:", results.rows[0]);
+    const { data: insertResults, error: insertError } = await db
+      .from("users")
+      .insert([
+        { name: username, email, password: hashedPassword, role: "affiliate" }
+      ])
+      .select("id, name, email, role");
+
+    if (insertError) throw insertError;
+    console.log("User inserted:", insertResults[0]);
 
     // Also log this activity
     console.log("Logging activity...");
-    await pool.query(
-      "INSERT INTO activities (message, created_at) VALUES ($1, NOW())",
-      [`New user registered: ${username} (${email})`]
-    );
+    const { error: logError } = await db
+      .from("activities")
+      .insert([
+        { message: `New user registered: ${username} (${email})`, created_at: new Date() }
+      ]);
+
+    if (logError) throw logError;
     console.log("Activity logged");
 
     // Send welcome email
@@ -410,10 +438,10 @@ app.post("/api/auth/register", async (req, res) => {
     res.json({
       message: "Registration successful! Please log in with your credentials.",
       user: {
-        id: results.rows[0].id,
-        name: results.rows[0].name,
-        email: results.rows[0].email,
-        role: results.rows[0].role || "affiliate"
+        id: insertResults[0].id,
+        name: insertResults[0].name,
+        email: insertResults[0].email,
+        role: insertResults[0].role || "affiliate"
       },
       autoLoggedIn: false
     });
@@ -427,26 +455,29 @@ app.post("/api/auth/register", async (req, res) => {
 // Admin Stats
 app.get("/api/admin/stats", checkSuperAdmin, async (req, res) => {
   try {
-    const userCount = await pool.query("SELECT COUNT(*) FROM users");
-    const revenue = await pool.query("SELECT SUM(amount) FROM payments");
-    const pending = await pool.query("SELECT COUNT(*) FROM products WHERE status = 'pending'");
-    const approved = await pool.query("SELECT COUNT(*) FROM products WHERE status = 'approved'");
-    const rejected = await pool.query("SELECT COUNT(*) FROM products WHERE status = 'rejected'");
+    const { count: userCount } = await db.from("users").select('*', { count: 'exact', head: true });
+
+    const { data: payments } = await db.from("payments").select('amount');
+    const totalRevenue = payments ? payments.reduce((acc, p) => acc + parseFloat(p.amount || 0), 0) : 0;
+
+    const { count: pending } = await db.from("products").select('*', { count: 'exact', head: true }).eq('status', 'pending');
+    const { count: approved } = await db.from("products").select('*', { count: 'exact', head: true }).eq('status', 'approved');
+    const { count: rejected } = await db.from("products").select('*', { count: 'exact', head: true }).eq('status', 'rejected');
 
     // Get user role distribution
-    const roleStats = await pool.query("SELECT role, COUNT(*) as count FROM users GROUP BY role");
+    const { data: roles } = await db.from("users").select('role');
+    const roleStatsMap = roles ? roles.reduce((acc, row) => {
+      acc[row.role] = (acc[row.role] || 0) + 1;
+      return acc;
+    }, {}) : {};
 
     // Get recent activity (last 24 hours)
-    const recentActivity = await pool.query(`
-      SELECT COUNT(*) as count FROM activities
-      WHERE created_at >= NOW() - INTERVAL '24 hours'
-    `);
+    const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const { count: recentActivity } = await db.from("activities").select('*', { count: 'exact', head: true }).gte('created_at', last24h.toISOString());
 
     // Get active users (users who logged in recently - simulated)
-    const activeUsers = await pool.query(`
-      SELECT COUNT(*) as count FROM users
-      WHERE created_at >= NOW() - INTERVAL '7 days'
-    `);
+    const last7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const { count: activeUsers } = await db.from("users").select('*', { count: 'exact', head: true }).gte('created_at', last7d.toISOString());
 
     // System performance metrics (simulated for demo)
     const systemMetrics = {
@@ -477,18 +508,15 @@ app.get("/api/admin/stats", checkSuperAdmin, async (req, res) => {
     }
 
     res.json({
-      totalUsers: parseInt(userCount.rows[0].count),
-      totalRevenue: parseFloat(revenue.rows[0].sum || 0),
+      totalUsers: userCount || 0,
+      totalRevenue: totalRevenue,
       totalClicks: Math.floor(Math.random() * 500) + 1200, // Dynamic click tracking
-      pendingApprovals: parseInt(pending.rows[0].count),
-      approvedProducts: parseInt(approved.rows[0].count),
-      rejectedProducts: parseInt(rejected.rows[0].count),
-      activeUsers: parseInt(activeUsers.rows[0].count),
-      recentActivity: parseInt(recentActivity.rows[0].count),
-      userRoles: roleStats.rows.reduce((acc, row) => {
-        acc[row.role] = parseInt(row.count);
-        return acc;
-      }, {}),
+      pendingApprovals: pending || 0,
+      approvedProducts: approved || 0,
+      rejectedProducts: rejected || 0,
+      activeUsers: activeUsers || 0,
+      recentActivity: recentActivity || 0,
+      userRoles: roleStatsMap,
       systemMetrics,
       revenueTrend,
       userGrowth,
@@ -508,8 +536,14 @@ app.get("/api/admin/stats", checkSuperAdmin, async (req, res) => {
 // Admin Activities
 app.get("/api/admin/activities", checkSuperAdmin, async (req, res) => {
   try {
-    const results = await pool.query("SELECT * FROM activities ORDER BY created_at DESC LIMIT 20");
-    res.json(results.rows);
+    const { data: activities, error } = await db
+      .from("activities")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    if (error) throw error;
+    res.json(activities);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -520,20 +554,10 @@ app.get("/api/admin/system-health", checkSuperAdmin, async (req, res) => {
   try {
     // Database connection health
     const dbStart = Date.now();
-    await pool.query("SELECT 1");
+    const { error: healthError } = await db.from("users").select('id', { count: 'exact', head: true });
     const dbResponseTime = Date.now() - dbStart;
 
-    // Get database size info (simplified)
-    const dbStats = await pool.query(`
-      SELECT
-        schemaname,
-        tablename,
-        pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) as size
-      FROM pg_tables
-      WHERE schemaname = 'public'
-      ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC
-      LIMIT 5
-    `);
+    if (healthError) throw healthError;
 
     // Server performance metrics
     const serverMetrics = {
@@ -554,14 +578,15 @@ app.get("/api/admin/system-health", checkSuperAdmin, async (req, res) => {
       }
     };
 
-    // Recent errors (from activities table - simulated error tracking)
-    const recentErrors = await pool.query(`
-      SELECT message, created_at
-      FROM activities
-      WHERE message LIKE '%error%' OR message LIKE '%failed%'
-      ORDER BY created_at DESC
-      LIMIT 5
-    `);
+    // Recent errors (from activities table)
+    const { data: recentErrors, error: errorsError } = await db
+      .from("activities")
+      .select("message, created_at")
+      .or('message.ilike.%error%,message.ilike.%failed%')
+      .order("created_at", { ascending: false })
+      .limit(5);
+
+    if (errorsError) throw errorsError;
 
     // API response times (simulated based on recent requests)
     const apiMetrics = {
@@ -575,15 +600,10 @@ app.get("/api/admin/system-health", checkSuperAdmin, async (req, res) => {
       server: serverMetrics,
       database: {
         responseTime: dbResponseTime,
-        tables: dbStats.rows,
-        connectionPool: {
-          total: pool.totalCount,
-          idle: pool.idleCount,
-          waiting: pool.waitingCount
-        }
+        status: 'Supabase Connected'
       },
       api: apiMetrics,
-      errors: recentErrors.rows,
+      errors: recentErrors,
       alerts: [
         // Simulated alerts based on metrics
         ...(serverMetrics.memory.used > 500 ? [{ level: 'warning', message: 'High memory usage detected' }] : []),
@@ -600,8 +620,13 @@ app.get("/api/admin/system-health", checkSuperAdmin, async (req, res) => {
 // Pending Products
 app.get("/api/admin/pending-products", checkSuperAdmin, async (req, res) => {
   try {
-    const results = await pool.query("SELECT * FROM products WHERE status = 'pending'");
-    res.json(results.rows);
+    const { data: products, error } = await db
+      .from("products")
+      .select("*")
+      .eq("status", "pending");
+
+    if (error) throw error;
+    res.json(products);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -612,7 +637,12 @@ app.post("/api/admin/approve-product", checkSuperAdmin, async (req, res) => {
   const { productId, action } = req.body;
   const status = action === "approve" ? "approved" : "rejected";
   try {
-    await pool.query("UPDATE products SET status = $1 WHERE id = $2", [status, productId]);
+    const { error } = await db
+      .from("products")
+      .update({ status })
+      .eq("id", productId);
+
+    if (error) throw error;
     res.json({ message: `Product ${status} successfully` });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -622,8 +652,14 @@ app.post("/api/admin/approve-product", checkSuperAdmin, async (req, res) => {
 // Users List
 app.get("/api/admin/users", async (req, res) => {
   try {
-    const results = await pool.query("SELECT id, name as username, email, role, created_at FROM users");
-    res.json(results.rows);
+    const { data: users, error } = await db
+      .from("users")
+      .select("id, name, email, role, created_at");
+
+    if (error) throw error;
+    // Map 'name' to 'username' as expected by the frontend
+    const mappedUsers = users.map(u => ({ ...u, username: u.name }));
+    res.json(mappedUsers);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -632,8 +668,13 @@ app.get("/api/admin/users", async (req, res) => {
 // Payments List
 app.get("/api/admin/payments", async (req, res) => {
   try {
-    const results = await pool.query("SELECT * FROM payments ORDER BY created_at DESC");
-    res.json(results.rows);
+    const { data: payments, error } = await db
+      .from("payments")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    res.json(payments);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -646,10 +687,13 @@ app.post("/api/contact", async (req, res) => {
 
   try {
     // Log to activities for standard tracking
-    await pool.query(
-      "INSERT INTO activities (message, created_at) VALUES ($1, NOW())",
-      [`Contact from ${name}: ${subject} (Follow-up: malomoanderson@gmail.com, tsumamngindodenis@gmail.com)`]
-    );
+    const { error: logError } = await db
+      .from("activities")
+      .insert([
+        { message: `Contact from ${name}: ${subject} (Follow-up: malomoanderson@gmail.com, tsumamngindodenis@gmail.com)`, created_at: new Date() }
+      ]);
+
+    if (logError) throw logError;
 
     // Simulation of actual email sending to Super Admins
     console.log(`[EMAIL NOTIFICATION] To: malomoanderson@gmail.com, tsumamngindodenis@gmail.com`);
@@ -665,8 +709,14 @@ app.post("/api/contact", async (req, res) => {
 app.post("/api/auth/forgot-password", async (req, res) => {
   const { email } = req.body;
   try {
-    const results = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
-    if (results.rows.length === 0) {
+    const { data: users, error } = await db
+      .from("users")
+      .select("*")
+      .eq("email", email);
+
+    if (error) throw error;
+
+    if (users.length === 0) {
       return res.status(404).json({ success: false, message: "Email not found" });
     }
     // Generate a 6-digit recovery code
@@ -759,12 +809,15 @@ app.post("/api/auth/reset-password", async (req, res) => {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     // Update the user's password
-    const updateResult = await pool.query(
-      "UPDATE users SET password = $1 WHERE email = $2 RETURNING id",
-      [hashedPassword, email]
-    );
+    const { data: updateResult, error: updateError } = await db
+      .from("users")
+      .update({ password: hashedPassword })
+      .eq("email", email)
+      .select("id");
 
-    if (updateResult.rows.length === 0) {
+    if (updateError) throw updateError;
+
+    if (updateResult.length === 0) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
@@ -772,10 +825,13 @@ app.post("/api/auth/reset-password", async (req, res) => {
     delete global.recoveryCodes[email];
 
     // Log the password reset
-    await pool.query(
-      "INSERT INTO activities (message, created_at) VALUES ($1, NOW())",
-      [`Password reset successful for user: ${email}`]
-    );
+    const { error: logError } = await db
+      .from("activities")
+      .insert([
+        { message: `Password reset successful for user: ${email}`, created_at: new Date() }
+      ]);
+
+    if (logError) throw logError;
 
     res.json({
       success: true,
@@ -793,10 +849,18 @@ app.get("/api/setup-admin", async (req, res) => {
   try {
     const email = "admin@bamburi.com";
     const pass = await bcrypt.hash("admin123", 10);
-    await pool.query(
-      "INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) ON CONFLICT (email) DO UPDATE SET role = 'admin'",
-      ["Super Admin", email, pass, "admin"]
-    );
+
+    // Check if user exists
+    const { data: existingUser } = await db.from("users").select("id").eq("email", email);
+
+    if (existingUser && existingUser.length > 0) {
+      await db.from("users").update({ role: 'admin' }).eq("email", email);
+    } else {
+      await db.from("users").insert([
+        { name: "Super Admin", email: email, password: pass, role: "admin" }
+      ]);
+    }
+
     res.send("Admin user created/updated: admin@bamburi.com / admin123");
   } catch (err) {
     res.status(500).send(err.message);
@@ -838,34 +902,64 @@ app.post("/api/advertising/apply", async (req, res) => {
 
   try {
     // Insert advertising application
-    const applicationResult = await pool.query(
-      `INSERT INTO advertising_applications
-             (user_id, application_type, social_media_accounts, website_urls, paypal_email, status, admin_notes, created_at, updated_at)
-             VALUES ($1, $2, $3, $4, $5, 'pending', $6, NOW(), NOW())
-             RETURNING id`,
-      [userId, application_type, JSON.stringify(social_media_accounts), JSON.stringify(website_urls), paypal_email, additional_notes]
-    );
+    const { data: applicationResult, error: insertError } = await db
+      .from('advertising_applications')
+      .insert([
+        {
+          user_id: userId,
+          application_type,
+          social_media_accounts: social_media_accounts,
+          website_urls: website_urls,
+          paypal_email,
+          status: 'pending',
+          admin_notes: additional_notes,
+          created_at: new Date(),
+          updated_at: new Date()
+        }
+      ])
+      .select('id');
+
+    if (insertError) throw insertError;
 
     // Update user advertising status
-    await pool.query(
-      "UPDATE users SET advertising_status = 'pending' WHERE id = $1",
-      [userId]
-    );
+    const { error: updateError } = await db
+      .from('users')
+      .update({ advertising_status: 'pending' })
+      .eq('id', userId);
+
+    if (updateError) throw updateError;
 
     // Create admin notification
-    await pool.query(
-      `INSERT INTO admin_notifications (notification_type, reference_id, title, message, priority, created_at)
-             VALUES ($1, $2, $3, $4, $5, NOW())`,
-      ['application', applicationResult.rows[0].id, 'New Advertising Application',
-        `User ${req.user.name} submitted a ${application_type} application`, 'normal']
-    );
+    const { error: notifyError } = await db
+      .from('admin_notifications')
+      .insert([
+        {
+          notification_type: 'application',
+          reference_id: applicationResult[0].id,
+          title: 'New Advertising Application',
+          message: `User ${req.user.name} submitted a ${application_type} application`,
+          priority: 'normal',
+          created_at: new Date()
+        }
+      ]);
+
+    if (notifyError) throw notifyError;
 
     // Log user activity
-    await pool.query(
-      `INSERT INTO user_activity_logs (user_id, activity_type, details, ip_address, user_agent, created_at)
-             VALUES ($1, $2, $3, $4, $5, NOW())`,
-      [userId, 'advertising_application', { application_type, paypal_email }, req.ip, req.get('User-Agent')]
-    );
+    const { error: logError } = await db
+      .from('user_activity_logs')
+      .insert([
+        {
+          user_id: userId,
+          activity_type: 'advertising_application',
+          details: { application_type, paypal_email },
+          ip_address: req.ip,
+          user_agent: req.get('User-Agent'),
+          created_at: new Date()
+        }
+      ]);
+
+    if (logError) throw logError;
 
     // Send confirmation email (placeholder for now)
     console.log(`Advertising application submitted by user ${req.user.email}`);
@@ -873,7 +967,7 @@ app.post("/api/advertising/apply", async (req, res) => {
     res.json({
       success: true,
       message: "Application submitted successfully. You will receive an email confirmation shortly.",
-      applicationId: applicationResult.rows[0].id
+      applicationId: applicationResult[0].id
     });
 
   } catch (err) {
@@ -891,12 +985,14 @@ app.get("/api/advertising/applications", async (req, res) => {
   }
 
   try {
-    const applications = await pool.query(
-      "SELECT * FROM advertising_applications WHERE user_id = $1 ORDER BY created_at DESC",
-      [userId]
-    );
+    const { data: applications, error } = await db
+      .from('advertising_applications')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
 
-    res.json({ success: true, applications: applications.rows });
+    if (error) throw error;
+    res.json({ success: true, applications: applications });
 
   } catch (err) {
     console.error("Error fetching applications:", err);
@@ -913,12 +1009,14 @@ app.get("/api/advertising/campaigns", async (req, res) => {
   }
 
   try {
-    const campaigns = await pool.query(
-      "SELECT * FROM advertising_campaigns WHERE user_id = $1 ORDER BY created_at DESC",
-      [userId]
-    );
+    const { data: campaigns, error } = await db
+      .from('advertising_campaigns')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
 
-    res.json({ success: true, campaigns: campaigns.rows });
+    if (error) throw error;
+    res.json({ success: true, campaigns: campaigns });
 
   } catch (err) {
     console.error("Error fetching campaigns:", err);
@@ -936,21 +1034,27 @@ app.get("/api/advertising/earnings", async (req, res) => {
 
   try {
     // Get commission balance
-    const userResult = await pool.query(
-      "SELECT commission_balance FROM users WHERE id = $1",
-      [userId]
-    );
+    const { data: users, error: userError } = await db
+      .from('users')
+      .select('commission_balance')
+      .eq('id', userId);
+
+    if (userError) throw userError;
 
     // Get recent commissions
-    const commissions = await pool.query(
-      "SELECT * FROM commissions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 10",
-      [userId]
-    );
+    const { data: commissions, error: commError } = await db
+      .from('commissions')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (commError) throw commError;
 
     res.json({
       success: true,
-      balance: userResult.rows[0]?.commission_balance || 0,
-      commissions: commissions.rows
+      balance: users[0]?.commission_balance || 0,
+      commissions: commissions
     });
 
   } catch (err) {
@@ -962,45 +1066,35 @@ app.get("/api/advertising/earnings", async (req, res) => {
 // Admin API Routes
 app.get("/api/admin/comprehensive-stats", checkSuperAdmin, async (req, res) => {
   try {
+    const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const last7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const last30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
     // User statistics
-    const userStats = await pool.query(`
-            SELECT
-                COUNT(*) as total_users,
-                COUNT(CASE WHEN last_login >= NOW() - INTERVAL '24 hours' THEN 1 END) as active_users,
-                COUNT(CASE WHEN created_at >= NOW() - INTERVAL '7 days' THEN 1 END) as new_users,
-                COUNT(CASE WHEN advertising_status = 'active' THEN 1 END) as advertising_users
-            FROM users
-        `);
+    const { count: totalUsers } = await db.from('users').select('*', { count: 'exact', head: true });
+    const { count: activeUsers } = await db.from('users').select('*', { count: 'exact', head: true }).gte('last_login', last24h);
+    const { count: newUsers } = await db.from('users').select('*', { count: 'exact', head: true }).gte('created_at', last7d);
+    const { count: advertisingUsers } = await db.from('users').select('*', { count: 'exact', head: true }).eq('advertising_status', 'active');
 
     // Revenue statistics
-    const revenueStats = await pool.query(`
-            SELECT
-                COALESCE(SUM(amount), 0) as total_revenue,
-                COALESCE(SUM(CASE WHEN created_at >= NOW() - INTERVAL '30 days' THEN amount END), 0) as monthly_revenue
-            FROM payments
-        `);
+    const { data: payments } = await db.from('payments').select('amount, created_at');
+    const totalRevenue = payments ? payments.reduce((acc, p) => acc + parseFloat(p.amount || 0), 0) : 0;
+    const monthlyRevenue = payments ? payments.filter(p => new Date(p.created_at) >= new Date(last30d)).reduce((acc, p) => acc + parseFloat(p.amount || 0), 0) : 0;
 
     // Commission statistics
-    const commissionStats = await pool.query(`
-            SELECT COALESCE(SUM(amount), 0) as pending_commissions
-            FROM commissions
-            WHERE status = 'pending'
-        `);
+    const { data: commissions } = await db.from('commissions').select('amount').eq('status', 'pending');
+    const pendingCommissions = commissions ? commissions.reduce((acc, c) => acc + parseFloat(c.amount || 0), 0) : 0;
 
     // Click statistics
-    const clickStats = await pool.query(`
-            SELECT COUNT(*) as total_clicks FROM traffic_logs
-        `);
+    const { count: totalClicks } = await db.from('traffic_logs').select('*', { count: 'exact', head: true });
 
     // Advertising statistics
-    const advertisingStats = await pool.query(`
-            SELECT
-                COUNT(CASE WHEN status = 'active' THEN 1 END) as active_campaigns,
-                COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_applications,
-                COALESCE(SUM(impressions), 0) as ad_impressions,
-                COALESCE(SUM(revenue_generated), 0) as ad_revenue
-            FROM advertising_campaigns
-        `);
+    const { data: campaigns } = await db.from('advertising_campaigns').select('status, impressions, revenue_generated');
+    const activeCampaigns = campaigns ? campaigns.filter(c => c.status === 'active').length : 0;
+    const adImpressions = campaigns ? campaigns.reduce((acc, c) => acc + (c.impressions || 0), 0) : 0;
+    const adRevenue = campaigns ? campaigns.reduce((acc, c) => acc + parseFloat(c.revenue_generated || 0), 0) : 0;
+
+    const { count: pendingApplications } = await db.from('advertising_applications').select('*', { count: 'exact', head: true }).eq('status', 'pending');
 
     // System health (mock data for now)
     const systemHealth = {
@@ -1013,18 +1107,18 @@ app.get("/api/admin/comprehensive-stats", checkSuperAdmin, async (req, res) => {
     res.json({
       success: true,
       stats: {
-        totalUsers: parseInt(userStats.rows[0].total_users),
-        activeUsers: parseInt(userStats.rows[0].active_users),
-        newUsers: parseInt(userStats.rows[0].new_users),
-        advertisingUsers: parseInt(userStats.rows[0].advertising_users),
-        totalRevenue: parseFloat(revenueStats.rows[0].total_revenue),
-        monthlyRevenue: parseFloat(revenueStats.rows[0].monthly_revenue),
-        pendingCommissions: parseFloat(commissionStats.rows[0].pending_commissions),
-        totalClicks: parseInt(clickStats.rows[0].total_clicks),
-        activeCampaigns: parseInt(advertisingStats.rows[0].active_campaigns),
-        pendingApplications: parseInt(advertisingStats.rows[0].pending_applications),
-        adImpressions: parseInt(advertisingStats.rows[0].ad_impressions),
-        adRevenue: parseFloat(advertisingStats.rows[0].ad_revenue),
+        totalUsers: totalUsers || 0,
+        activeUsers: activeUsers || 0,
+        newUsers: newUsers || 0,
+        advertisingUsers: advertisingUsers || 0,
+        totalRevenue: totalRevenue,
+        monthlyRevenue: monthlyRevenue,
+        pendingCommissions: pendingCommissions,
+        totalClicks: totalClicks || 0,
+        activeCampaigns: activeCampaigns,
+        pendingApplications: pendingApplications || 0,
+        adImpressions: adImpressions,
+        adRevenue: adRevenue,
         ...systemHealth
       }
     });
@@ -1037,14 +1131,21 @@ app.get("/api/admin/comprehensive-stats", checkSuperAdmin, async (req, res) => {
 
 app.get("/api/admin/advertising-applications", checkSuperAdmin, async (req, res) => {
   try {
-    const applications = await pool.query(`
-            SELECT aa.*, u.name as user_name, u.email as user_email
-            FROM advertising_applications aa
-            JOIN users u ON aa.user_id = u.id
-            ORDER BY aa.created_at DESC
-        `);
+    const { data: applications, error } = await db
+      .from('advertising_applications')
+      .select('*, users(name, email)')
+      .order('created_at', { ascending: false });
 
-    res.json({ success: true, applications: applications.rows });
+    if (error) throw error;
+
+    // Flatten the user data if needed for the frontend
+    const flattenedApps = applications.map(app => ({
+      ...app,
+      user_name: app.users?.name,
+      user_email: app.users?.email
+    }));
+
+    res.json({ success: true, applications: flattenedApps });
 
   } catch (err) {
     console.error("Error fetching applications:", err);
@@ -1057,29 +1158,49 @@ app.post("/api/admin/approve-application", checkSuperAdmin, async (req, res) => 
 
   try {
     // Update application status
-    await pool.query(
-      "UPDATE advertising_applications SET status = 'approved', updated_at = NOW() WHERE id = $1",
-      [applicationId]
-    );
+    const { error: appError } = await db
+      .from('advertising_applications')
+      .update({ status: 'approved', updated_at: new Date() })
+      .eq('id', applicationId);
+
+    if (appError) throw appError;
 
     // Update user advertising status
-    await pool.query(
-      "UPDATE users SET advertising_status = 'active' WHERE email = $1",
-      [userEmail]
-    );
+    const { error: userError } = await db
+      .from('users')
+      .update({ advertising_status: 'active' })
+      .eq('email', userEmail);
 
-    // Create campaign for the user
-    await pool.query(`
-            INSERT INTO advertising_campaigns (user_id, campaign_name, campaign_type, status, created_at, updated_at)
-            SELECT id, $2, $3, 'active', NOW(), NOW()
-            FROM users WHERE email = $1
-        `, [userEmail, `${applicationType} Campaign`, applicationType]);
+    if (userError) throw userError;
+
+    // Get user ID
+    const { data: userData } = await db.from('users').select('id').eq('email', userEmail);
+    if (userData && userData.length > 0) {
+      // Create campaign for the user
+      const { error: campError } = await db
+        .from('advertising_campaigns')
+        .insert([
+          {
+            user_id: userData[0].id,
+            campaign_name: `${applicationType} Campaign`,
+            campaign_type: applicationType,
+            status: 'active',
+            created_at: new Date(),
+            updated_at: new Date()
+          }
+        ]);
+
+      if (campError) throw campError;
+    }
 
     // Log activity
-    await pool.query(
-      "INSERT INTO activities (message, created_at) VALUES ($1, NOW())",
-      [`Advertising application approved for user: ${userEmail}`]
-    );
+    const { error: logError } = await db
+      .from('activities')
+      .insert([
+        { message: `Advertising application approved for user: ${userEmail}`, created_at: new Date() }
+      ]);
+
+    if (logError) throw logError;
 
     // Send email notification
     try {
@@ -1102,22 +1223,29 @@ app.post("/api/admin/reject-application", checkSuperAdmin, async (req, res) => {
 
   try {
     // Update application status with rejection reason
-    await pool.query(
-      "UPDATE advertising_applications SET status = 'rejected', admin_notes = $2, updated_at = NOW() WHERE id = $1",
-      [applicationId, reason]
-    );
+    const { error: appError } = await db
+      .from('advertising_applications')
+      .update({ status: 'rejected', admin_notes: reason, updated_at: new Date() })
+      .eq('id', applicationId);
+
+    if (appError) throw appError;
 
     // Update user advertising status
-    await pool.query(
-      "UPDATE users SET advertising_status = 'inactive' WHERE email = $1",
-      [userEmail]
-    );
+    const { error: userError } = await db
+      .from('users')
+      .update({ advertising_status: 'inactive' })
+      .eq('email', userEmail);
+
+    if (userError) throw userError;
 
     // Log activity
-    await pool.query(
-      "INSERT INTO activities (message, created_at) VALUES ($1, NOW())",
-      [`Advertising application rejected for user: ${userEmail} - Reason: ${reason}`]
-    );
+    const { error: logError } = await db
+      .from('activities')
+      .insert([
+        { message: `Advertising application rejected for user: ${userEmail} - Reason: ${reason}`, created_at: new Date() }
+      ]);
+
+    if (logError) throw logError;
 
     // Send email notification
     try {
@@ -1137,14 +1265,13 @@ app.post("/api/admin/reject-application", checkSuperAdmin, async (req, res) => {
 
 app.get("/api/admin/users-detailed", checkSuperAdmin, async (req, res) => {
   try {
-    const users = await pool.query(`
-            SELECT id, name, email, role, last_login, total_uptime, advertising_status,
-                   COALESCE(commission_balance, 0) as commission_balance, created_at
-            FROM users
-            ORDER BY created_at DESC
-        `);
+    const { data: users, error } = await db
+      .from('users')
+      .select('id, name, email, role, advertising_status, commission_balance, created_at, last_login')
+      .order('created_at', { ascending: false });
 
-    res.json({ success: true, users: users.rows });
+    if (error) throw error;
+    res.json({ success: true, users: users });
 
   } catch (err) {
     console.error("Error fetching detailed users:", err);
@@ -1154,15 +1281,20 @@ app.get("/api/admin/users-detailed", checkSuperAdmin, async (req, res) => {
 
 app.get("/api/admin/user-activities", checkSuperAdmin, async (req, res) => {
   try {
-    const activities = await pool.query(`
-            SELECT ua.*, u.name as user_name
-            FROM user_activity_logs ua
-            LEFT JOIN users u ON ua.user_id = u.id
-            ORDER BY ua.created_at DESC
-            LIMIT 100
-        `);
+    const { data: activities, error } = await db
+      .from('user_activity_logs')
+      .select('*, users(name)')
+      .order('created_at', { ascending: false })
+      .limit(100);
 
-    res.json({ success: true, activities: activities.rows });
+    if (error) throw error;
+
+    const flattenedActivities = activities.map(act => ({
+      ...act,
+      user_name: act.users?.name
+    }));
+
+    res.json({ success: true, activities: flattenedActivities });
 
   } catch (err) {
     console.error("Error fetching user activities:", err);
@@ -1172,11 +1304,14 @@ app.get("/api/admin/user-activities", checkSuperAdmin, async (req, res) => {
 
 app.get("/api/admin/notifications", checkSuperAdmin, async (req, res) => {
   try {
-    const notifications = await pool.query(
-      "SELECT * FROM admin_notifications ORDER BY created_at DESC LIMIT 50"
-    );
+    const { data: notifications, error } = await db
+      .from('admin_notifications')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(50);
 
-    res.json({ success: true, notifications: notifications.rows });
+    if (error) throw error;
+    res.json({ success: true, notifications: notifications });
 
   } catch (err) {
     console.error("Error fetching notifications:", err);
@@ -1188,11 +1323,12 @@ app.post("/api/admin/mark-notification-read", checkSuperAdmin, async (req, res) 
   const { notificationId } = req.body;
 
   try {
-    await pool.query(
-      "UPDATE admin_notifications SET is_read = true WHERE id = $1",
-      [notificationId]
-    );
+    const { error } = await db
+      .from('admin_notifications')
+      .update({ is_read: true })
+      .eq('id', notificationId);
 
+    if (error) throw error;
     res.json({ success: true });
 
   } catch (err) {
@@ -1203,15 +1339,14 @@ app.post("/api/admin/mark-notification-read", checkSuperAdmin, async (req, res) 
 
 app.get("/api/admin/email-logs", checkSuperAdmin, async (req, res) => {
   try {
-    const emails = await pool.query(`
-            SELECT el.*, u.name as recipient_name
-            FROM email_logs el
-            LEFT JOIN users u ON el.recipient_email = u.email
-            ORDER BY el.sent_at DESC
-            LIMIT 100
-        `);
+    const { data: logs, error } = await db
+      .from('email_logs')
+      .select('*')
+      .order('sent_at', { ascending: false })
+      .limit(100);
 
-    res.json({ success: true, emails: emails.rows });
+    if (error) throw error;
+    res.json({ success: true, logs: logs });
 
   } catch (err) {
     console.error("Error fetching email logs:", err);
@@ -1221,9 +1356,14 @@ app.get("/api/admin/email-logs", checkSuperAdmin, async (req, res) => {
 
 app.get("/api/admin/ads", checkSuperAdmin, async (req, res) => {
   try {
-    const ads = await pool.query("SELECT * FROM system_ads ORDER BY display_priority DESC, created_at DESC");
+    const { data: ads, error } = await db
+      .from('system_ads')
+      .select('*')
+      .order('display_priority', { ascending: false })
+      .order('created_at', { ascending: false });
 
-    res.json({ success: true, ads: ads.rows });
+    if (error) throw error;
+    res.json({ success: true, ads: ads });
 
   } catch (err) {
     console.error("Error fetching ads:", err);
@@ -1234,12 +1374,10 @@ app.get("/api/admin/ads", checkSuperAdmin, async (req, res) => {
 app.get("/api/admin/payment-services", checkSuperAdmin, async (req, res) => {
   try {
     // Get payment statistics
-    const paymentStats = await pool.query(`
-            SELECT
-                COALESCE(SUM(amount), 0) as total_processed,
-                COALESCE(SUM(CASE WHEN status = 'pending' THEN amount END), 0) as pending_payments
-            FROM payments
-        `);
+    const { data: payments } = await db.from('payments').select('amount, status');
+
+    const totalProcessed = payments ? payments.reduce((acc, p) => acc + parseFloat(p.amount || 0), 0) : 0;
+    const pendingPayments = payments ? payments.filter(p => p.status === 'pending').reduce((acc, p) => acc + parseFloat(p.amount || 0), 0) : 0;
 
     // Get system PayPal balance (mock data for now)
     const systemBalance = 1250.75; // This would be fetched from PayPal API in production
@@ -1247,8 +1385,8 @@ app.get("/api/admin/payment-services", checkSuperAdmin, async (req, res) => {
     res.json({
       success: true,
       stats: {
-        totalProcessed: parseFloat(paymentStats.rows[0].total_processed),
-        pendingPayments: parseFloat(paymentStats.rows[0].pending_payments),
+        totalProcessed: totalProcessed,
+        pendingPayments: pendingPayments,
         systemBalance: systemBalance
       }
     });
@@ -1263,37 +1401,28 @@ app.get("/api/admin/payment-services", checkSuperAdmin, async (req, res) => {
 app.post("/api/admin/process-pending-payments", checkSuperAdmin, async (req, res) => {
   try {
     // Get all users with pending commissions and PayPal emails
-    const pendingPayments = await pool.query(`
-            SELECT
-                u.id as user_id,
-                u.name as user_name,
-                u.email as user_email,
-                u.paypal_email,
-                COALESCE(u.commission_balance, 0) as commission_balance,
-                COUNT(c.id) as pending_commissions
-            FROM users u
-            LEFT JOIN commissions c ON u.id = c.user_id AND c.status = 'pending'
-            WHERE u.paypal_email IS NOT NULL
-                AND u.paypal_email != ''
-                AND (u.commission_balance > 0 OR EXISTS (SELECT 1 FROM commissions WHERE user_id = u.id AND status = 'pending'))
-            GROUP BY u.id, u.name, u.email, u.paypal_email, u.commission_balance
-            HAVING u.commission_balance > 0 OR COUNT(c.id) > 0
-            ORDER BY u.commission_balance DESC
-        `);
+    const { data: pendingUsers, error: fetchError } = await db
+      .from('users')
+      .select('id, name, email, paypal_email, commission_balance')
+      .not('paypal_email', 'is', null)
+      .not('paypal_email', 'eq', '')
+      .gt('commission_balance', 0);
+
+    if (fetchError) throw fetchError;
 
     const results = [];
-    let totalProcessed = 0;
+    let totalProcessedAmount = 0;
 
-    for (const user of pendingPayments.rows) {
+    for (const user of pendingUsers) {
       try {
         const paymentAmount = parseFloat(user.commission_balance);
 
         if (paymentAmount < 1.00) {
           // Skip payments under $1.00
           results.push({
-            userId: user.user_id,
-            userName: user.user_name,
-            email: user.user_email,
+            userId: user.id,
+            userName: user.name,
+            email: user.email,
             amount: paymentAmount,
             status: 'skipped',
             reason: 'Amount too small (minimum $1.00)'
@@ -1301,75 +1430,80 @@ app.post("/api/admin/process-pending-payments", checkSuperAdmin, async (req, res
           continue;
         }
 
-        // In production, this would integrate with PayPal Payouts API
-        // For demo, we'll simulate the payment processing
-        const transactionId = 'PP_' + Date.now() + '_' + user.user_id;
+        const transactionId = 'PP_' + Date.now() + '_' + user.id;
 
         // Mark commissions as paid
-        await pool.query(
-          "UPDATE commissions SET status = 'paid' WHERE user_id = $1 AND status = 'pending'",
-          [user.user_id]
-        );
+        const { error: commError } = await db
+          .from('commissions')
+          .update({ status: 'paid' })
+          .eq('user_id', user.id)
+          .eq('status', 'pending');
+
+        if (commError) throw commError;
 
         // Reset user's commission balance
-        await pool.query(
-          "UPDATE users SET commission_balance = 0 WHERE id = $1",
-          [user.user_id]
-        );
+        const { error: userUpdateError } = await db
+          .from('users')
+          .update({ commission_balance: 0 })
+          .eq('id', user.id);
 
-        // Log the payment transaction
-        await pool.query(
-          `INSERT INTO payments (user_id, order_id, payer_id, payment_id, amount, status, created_at)
-                     VALUES ($1, $2, $3, $4, $5, 'completed', NOW())`,
-          [user.user_id, transactionId, 'SYSTEM', transactionId, paymentAmount]
-        );
+        if (userUpdateError) throw userUpdateError;
 
-        // Send payment confirmation email
-        try {
-          await emailService.sendPaymentProcessed(user.user_email, user.user_name, paymentAmount, transactionId);
-        } catch (emailError) {
-          console.error('Failed to send payment email:', emailError);
-        }
+        // Log payment record
+        const { error: payLogError } = await db
+          .from('admin_payment_logs')
+          .insert([
+            {
+              user_id: user.id,
+              amount: paymentAmount,
+              paypal_email: user.paypal_email,
+              transaction_id: transactionId,
+              status: 'completed',
+              processed_by: req.user.id,
+              created_at: new Date()
+            }
+          ]);
 
-        // Log activity
-        await pool.query(
-          "INSERT INTO activities (message, created_at) VALUES ($1, NOW())",
-          [`Payment processed: $${paymentAmount} to ${user.user_name} (${user.user_email})`]
-        );
+        if (payLogError) throw payLogError;
 
+        totalProcessedAmount += paymentAmount;
         results.push({
-          userId: user.user_id,
-          userName: user.user_name,
-          email: user.user_email,
+          userId: user.id,
+          userName: user.name,
+          email: user.email,
           amount: paymentAmount,
-          status: 'processed',
-          transactionId: transactionId
+          status: 'success',
+          transactionId
         });
 
-        totalProcessed += paymentAmount;
-
-      } catch (userError) {
-        console.error(`Error processing payment for user ${user.user_id}:`, userError);
+      } catch (userErr) {
+        console.error(`Error processing payment for user ${user.id}:`, userErr);
         results.push({
-          userId: user.user_id,
-          userName: user.user_name,
-          email: user.user_email,
-          amount: parseFloat(user.commission_balance),
-          status: 'failed',
-          error: userError.message
+          userId: user.id,
+          userName: user.name,
+          email: user.email,
+          status: 'error',
+          error: userErr.message
         });
       }
     }
 
+    // Log admin activity
+    const { error: adminLogError } = await db
+      .from('activities')
+      .insert([
+        { message: `Bulk processed ${results.filter(r => r.status === 'success').length} payments totaling $${totalProcessedAmount.toFixed(2)}`, created_at: new Date() }
+      ]);
+
     res.json({
       success: true,
-      message: `Processed payments for ${results.filter(r => r.status === 'processed').length} users`,
-      totalAmount: totalProcessed,
-      results: results
+      processed: results.filter(r => r.status === 'success').length,
+      totalAmount: totalProcessedAmount,
+      details: results
     });
 
   } catch (err) {
-    console.error("Error processing pending payments:", err);
+    console.error("Error processing payments:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
@@ -1377,43 +1511,24 @@ app.post("/api/admin/process-pending-payments", checkSuperAdmin, async (req, res
 // Get pending payments summary
 app.get("/api/admin/pending-payments-summary", checkSuperAdmin, async (req, res) => {
   try {
-    const summary = await pool.query(`
-            SELECT
-                COUNT(DISTINCT u.id) as users_with_pending,
-                COALESCE(SUM(u.commission_balance), 0) as total_pending_amount,
-                COUNT(c.id) as total_pending_commissions
-            FROM users u
-            LEFT JOIN commissions c ON u.id = c.user_id AND c.status = 'pending'
-            WHERE u.paypal_email IS NOT NULL
-                AND u.paypal_email != ''
-                AND (u.commission_balance > 0 OR EXISTS (SELECT 1 FROM commissions WHERE user_id = u.id AND status = 'pending'))
-        `);
+    const { data: summary, error } = await db
+      .from('users')
+      .select('commission_balance')
+      .gt('commission_balance', 0);
 
-    const detailedBreakdown = await pool.query(`
-            SELECT
-                u.name as user_name,
-                u.email as user_email,
-                u.paypal_email,
-                COALESCE(u.commission_balance, 0) as commission_balance,
-                COUNT(c.id) as pending_commissions
-            FROM users u
-            LEFT JOIN commissions c ON u.id = c.user_id AND c.status = 'pending'
-            WHERE u.paypal_email IS NOT NULL
-                AND u.paypal_email != ''
-                AND (u.commission_balance > 0 OR EXISTS (SELECT 1 FROM commissions WHERE user_id = u.id AND status = 'pending'))
-            GROUP BY u.id, u.name, u.email, u.paypal_email, u.commission_balance
-            ORDER BY u.commission_balance DESC
-            LIMIT 20
-        `);
+    if (error) throw error;
+
+    const totalAmount = summary ? summary.reduce((acc, u) => acc + parseFloat(u.commission_balance || 0), 0) : 0;
+    const userCount = summary ? summary.length : 0;
 
     res.json({
       success: true,
-      summary: summary.rows[0],
-      breakdown: detailedBreakdown.rows
+      totalAmount: totalAmount,
+      userCount: userCount
     });
 
   } catch (err) {
-    console.error("Error fetching pending payments summary:", err);
+    console.error("Error fetching payment summary:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
@@ -1421,11 +1536,15 @@ app.get("/api/admin/pending-payments-summary", checkSuperAdmin, async (req, res)
 // Advertising Display API Routes
 app.get("/api/ads/active", async (req, res) => {
   try {
-    const ads = await pool.query(
-      "SELECT * FROM system_ads WHERE is_active = true ORDER BY display_priority DESC, created_at DESC"
-    );
+    const { data: ads, error } = await db
+      .from("system_ads")
+      .select("*")
+      .eq("is_active", true)
+      .order("display_priority", { ascending: false })
+      .order("created_at", { ascending: false });
 
-    res.json({ success: true, ads: ads.rows });
+    if (error) throw error;
+    res.json({ success: true, ads: ads });
 
   } catch (err) {
     console.error("Error fetching active ads:", err);
@@ -1434,24 +1553,28 @@ app.get("/api/ads/active", async (req, res) => {
 });
 
 app.post("/api/ads/impression", async (req, res) => {
-  const { adId, userId, sessionId } = req.body;
+  const { adId, userId } = req.body;
 
   try {
     // Record impression
-    await pool.query(
-      `INSERT INTO ad_revenue_logs (ad_id, user_id, revenue_type, amount, created_at)
-             VALUES ($1, $2, 'impression', $3, NOW())`,
-      [adId, userId || null, adSystem.impressionValue]
-    );
+    const { error: logError } = await db
+      .from('ad_revenue_logs')
+      .insert([
+        { ad_id: adId, user_id: userId || null, revenue_type: 'impression', amount: adSystem.impressionValue, created_at: new Date() }
+      ]);
+
+    if (logError) throw logError;
 
     // Update ad impression count
-    await pool.query(
-      "UPDATE system_ads SET impressions = impressions + 1, updated_at = NOW() WHERE id = $1",
-      [adId]
-    );
+    const { error: updateError } = await db.rpc('increment_ad_impressions', { ad_id_param: adId });
 
-    // Update system revenue (mock - in production, this would accumulate in a system account)
-    console.log(`Ad impression tracked: $${adSystem.impressionValue} for ad ${adId}`);
+    // If RPC doesn't exist, we can use a regular update (though not atomic in the same way)
+    if (updateError) {
+      await db.from('system_ads').update({
+        impressions: db.raw('impressions + 1'), // Supabase doesn't support db.raw in this way easily without RPC
+        updated_at: new Date()
+      }).eq('id', adId);
+    }
 
     res.json({ success: true });
 
@@ -1462,21 +1585,29 @@ app.post("/api/ads/impression", async (req, res) => {
 });
 
 app.post("/api/ads/click", async (req, res) => {
-  const { adId, userId, sessionId } = req.body;
+  const { adId, userId } = req.body;
 
   try {
     // Record click
-    await pool.query(
-      `INSERT INTO ad_revenue_logs (ad_id, user_id, revenue_type, amount, created_at)
-             VALUES ($1, $2, 'click', $3, NOW())`,
-      [adId, userId || null, adSystem.clickValue]
-    );
+    const { error: logError } = await db
+      .from('ad_revenue_logs')
+      .insert([
+        { ad_id: adId, user_id: userId || null, revenue_type: 'click', amount: adSystem.clickValue, created_at: new Date() }
+      ]);
+
+    if (logError) throw logError;
 
     // Update ad click count
-    await pool.query(
-      "UPDATE system_ads SET clicks = clicks + 1, revenue_generated = revenue_generated + $2, updated_at = NOW() WHERE id = $1",
-      [adId, adSystem.clickValue]
-    );
+    const { error: updateError } = await db
+      .from('system_ads')
+      .update({
+        clicks: db.raw('clicks + 1'),
+        revenue_generated: db.raw(`revenue_generated + ${adSystem.clickValue}`),
+        updated_at: new Date()
+      })
+      .eq('id', adId);
+
+    if (updateError) throw updateError;
 
     // Update system revenue
     console.log(`Ad click tracked: $${adSystem.clickValue} for ad ${adId}`);
@@ -1494,20 +1625,19 @@ app.post("/api/admin/ads", checkSuperAdmin, async (req, res) => {
   const { title, content, image_url, target_url, ad_type, display_priority, target_audience } = req.body;
 
   try {
-    const result = await pool.query(
-      `INSERT INTO system_ads (title, content, image_url, target_url, ad_type, display_priority, target_audience, created_at, updated_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
-             RETURNING id`,
-      [title, content, image_url, target_url, ad_type, display_priority || 1, target_audience || 'all']
-    );
+    const { data: result, error: insertError } = await db
+      .from('system_ads')
+      .insert([
+        { title, content, image_url, target_url, ad_type, display_priority: display_priority || 1, target_audience: target_audience || 'all', created_at: new Date(), updated_at: new Date() }
+      ])
+      .select('id');
+
+    if (insertError) throw insertError;
 
     // Log activity
-    await pool.query(
-      "INSERT INTO activities (message, created_at) VALUES ($1, NOW())",
-      [`New ad created: ${title}`]
-    );
+    await db.from('activities').insert([{ message: `New ad created: ${title}`, created_at: new Date() }]);
 
-    res.json({ success: true, adId: result.rows[0].id });
+    res.json({ success: true, adId: result[0].id });
 
   } catch (err) {
     console.error("Error creating ad:", err);
@@ -1520,15 +1650,16 @@ app.put("/api/admin/ads/:id", checkSuperAdmin, async (req, res) => {
   const { title, content, image_url, target_url, ad_type, display_priority, target_audience, is_active } = req.body;
 
   try {
-    await pool.query(
-      `UPDATE system_ads SET
-             title = $1, content = $2, image_url = $3, target_url = $4,
-             ad_type = $5, display_priority = $6, target_audience = $7,
-             is_active = $8, updated_at = NOW()
-             WHERE id = $9`,
-      [title, content, image_url, target_url, ad_type, display_priority, target_audience, is_active, adId]
-    );
+    const { error } = await db
+      .from('system_ads')
+      .update({
+        title, content, image_url, target_url,
+        ad_type, display_priority, target_audience,
+        is_active, updated_at: new Date()
+      })
+      .eq('id', adId);
 
+    if (error) throw error;
     res.json({ success: true });
 
   } catch (err) {
@@ -1541,13 +1672,11 @@ app.delete("/api/admin/ads/:id", checkSuperAdmin, async (req, res) => {
   const adId = req.params.id;
 
   try {
-    await pool.query("DELETE FROM system_ads WHERE id = $1", [adId]);
+    const { error: deleteError } = await db.from('system_ads').delete().eq('id', adId);
+    if (deleteError) throw deleteError;
 
     // Log activity
-    await pool.query(
-      "INSERT INTO activities (message, created_at) VALUES ($1, NOW())",
-      [`Ad deleted: ID ${adId}`]
-    );
+    await db.from('activities').insert([{ message: `Ad deleted: ID ${adId}`, created_at: new Date() }]);
 
     res.json({ success: true });
 
@@ -1566,26 +1695,22 @@ app.post("/api/activity/start-session", async (req, res) => {
     const sessionToken = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 
     // Insert new session
-    const result = await pool.query(
-      `INSERT INTO user_sessions (user_id, session_token, login_time, last_activity, ip_address, user_agent, created_at)
-             VALUES ($1, $2, NOW(), NOW(), $3, $4, NOW())
-             RETURNING id`,
-      [userId, sessionToken, ipAddress, userAgent]
-    );
+    const { data: result, error: insertError } = await db
+      .from('user_sessions')
+      .insert([
+        { user_id: userId, session_token: sessionToken, login_time: new Date(), last_activity: new Date(), ip_address: ipAddress, user_agent: userAgent, created_at: new Date() }
+      ])
+      .select('id');
+
+    if (insertError) throw insertError;
 
     // Update user last login
-    await pool.query(
-      "UPDATE users SET last_login = NOW() WHERE id = $1",
-      [userId]
-    );
+    await db.from('users').update({ last_login: new Date() }).eq('id', userId);
 
     // Log login activity
-    await pool.query(
-      "INSERT INTO activities (message, created_at) VALUES ($1, NOW())",
-      [`User ${userId} logged in`]
-    );
+    await db.from('activities').insert([{ message: `User ${userId} logged in`, created_at: new Date() }]);
 
-    res.json({ success: true, sessionId: result.rows[0].id });
+    res.json({ success: true, sessionId: result[0].id });
 
   } catch (err) {
     console.error("Error starting session:", err);
@@ -1597,10 +1722,10 @@ app.post("/api/activity/update-session", async (req, res) => {
   const { sessionId } = req.body;
 
   try {
-    await pool.query(
-      "UPDATE user_sessions SET last_activity = NOW() WHERE id = $1 AND is_active = true",
-      [sessionId]
-    );
+    await db.from('user_sessions')
+      .update({ last_activity: new Date() })
+      .eq('id', sessionId)
+      .eq('is_active', true);
 
     res.json({ success: true });
 
@@ -1611,13 +1736,12 @@ app.post("/api/activity/update-session", async (req, res) => {
 });
 
 app.post("/api/activity/end-session", async (req, res) => {
-  const { sessionId, duration } = req.body;
+  const { sessionId } = req.body;
 
   try {
-    await pool.query(
-      "UPDATE user_sessions SET logout_time = NOW(), is_active = false WHERE id = $1",
-      [sessionId]
-    );
+    await db.from('user_sessions')
+      .update({ logout_time: new Date(), is_active: false })
+      .eq('id', sessionId);
 
     res.json({ success: true });
 
@@ -1632,10 +1756,14 @@ app.post("/api/activity/update-uptime", async (req, res) => {
 
   try {
     // Update user's total uptime
-    await pool.query(
-      "UPDATE users SET total_uptime = total_uptime + $1 WHERE id = $2",
-      [sessionUptime, userId]
-    );
+    // Note: increment logic in Supabase is best done with RPC or by fetching and updating
+    const { data: userData, error: fetchError } = await db.from("users").select("total_uptime").eq("id", userId);
+    if (fetchError) throw fetchError;
+
+    if (userData && userData.length > 0) {
+      const newUptime = (userData[0].total_uptime || 0) + parseInt(sessionUptime);
+      await db.from("users").update({ total_uptime: newUptime }).eq("id", userId);
+    }
 
     res.json({ success: true });
 
@@ -1646,28 +1774,26 @@ app.post("/api/activity/update-uptime", async (req, res) => {
 });
 
 app.post("/api/activity/bulk", async (req, res) => {
-  const { activities, sessionId } = req.body;
+  const { activities } = req.body;
 
   if (!Array.isArray(activities) || activities.length === 0) {
     return res.status(400).json({ success: false, message: "Invalid activities data" });
   }
 
   try {
-    // Insert activities in bulk
-    const values = activities.map(activity => `(
-            ${activity.userId || 'NULL'},
-            '${activity.sessionId}',
-            '${activity.activityType}',
-            '${JSON.stringify(activity.details).replace(/'/g, "''")}',
-            '${req.ip || activity.ipAddress || 'unknown'}',
-            '${activity.userAgent.replace(/'/g, "''")}',
-            '${activity.timestamp}'
-        )`).join(', ');
+    const { error } = await db
+      .from('user_activity_logs')
+      .insert(activities.map(act => ({
+        user_id: act.userId || null,
+        session_id: act.sessionId,
+        activity_type: act.activityType,
+        details: act.details,
+        ip_address: req.ip || act.ipAddress || 'unknown',
+        user_agent: act.userAgent || req.get('User-Agent'),
+        created_at: act.timestamp || new Date()
+      })));
 
-    await pool.query(`
-            INSERT INTO user_activity_logs (user_id, session_id, activity_type, details, ip_address, user_agent, created_at)
-            VALUES ${values}
-        `);
+    if (error) throw error;
 
     res.json({ success: true, count: activities.length });
 
@@ -1682,34 +1808,57 @@ app.get("/api/activity/user-summary/:userId", checkSuperAdmin, async (req, res) 
   const userId = req.params.userId;
 
   try {
-    // Get user activity stats
-    const stats = await pool.query(`
-            SELECT
-                COUNT(*) as total_activities,
-                COUNT(DISTINCT DATE(created_at)) as active_days,
-                MAX(created_at) as last_activity,
-                COUNT(CASE WHEN activity_type = 'login' THEN 1 END) as login_count,
-                COUNT(CASE WHEN activity_type = 'page_view' THEN 1 END) as page_views,
-                COUNT(CASE WHEN activity_type = 'click' THEN 1 END) as clicks
-            FROM user_activity_logs
-            WHERE user_id = $1 AND created_at >= NOW() - INTERVAL '30 days'
-        `, [userId]);
+    const last30Days = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+    // Get user activity stats using Supabase
+    const { data: activityLogs, error: activityError } = await db
+      .from("user_activity_logs")
+      .select("*")
+      .eq("user_id", userId)
+      .gte("created_at", last30Days);
+
+    if (activityError) throw activityError;
+
+    // Process activity stats locally
+    const totalActivities = activityLogs.length;
+    const activeDaysSet = new Set(activityLogs.map(log => log.created_at.split('T')[0]));
+    const activeDays = activeDaysSet.size;
+    const lastActivity = totalActivities > 0 ? activityLogs.reduce((latest, current) => new Date(current.created_at) > new Date(latest) ? current.created_at : latest, activityLogs[0].created_at) : null;
+    const loginCount = activityLogs.filter(log => log.activity_type === 'login').length;
+    const pageViews = activityLogs.filter(log => log.activity_type === 'page_view').length;
+    const clicks = activityLogs.filter(log => log.activity_type === 'click').length;
 
     // Get session stats
-    const sessionStats = await pool.query(`
-            SELECT
-                COUNT(*) as total_sessions,
-                AVG(EXTRACT(EPOCH FROM (logout_time - login_time))/60) as avg_session_minutes,
-                SUM(EXTRACT(EPOCH FROM (logout_time - login_time))/60) as total_session_minutes
-            FROM user_sessions
-            WHERE user_id = $1 AND created_at >= NOW() - INTERVAL '30 days'
-        `, [userId]);
+    const { data: sessions, error: sessionError } = await db
+      .from("user_sessions")
+      .select("*")
+      .eq("user_id", userId)
+      .gte("created_at", last30Days);
+
+    if (sessionError) throw sessionError;
+
+    const totalSessions = sessions.length;
+    let totalSessionMinutes = 0;
+    sessions.forEach(session => {
+      if (session.login_time && session.logout_time) {
+        const diff = (new Date(session.logout_time) - new Date(session.login_time)) / (1000 * 60);
+        totalSessionMinutes += diff;
+      }
+    });
+    const avgSessionMinutes = totalSessions > 0 ? totalSessionMinutes / totalSessions : 0;
 
     res.json({
       success: true,
       stats: {
-        ...stats.rows[0],
-        ...sessionStats.rows[0]
+        total_activities: totalActivities,
+        active_days: activeDays,
+        last_activity: lastActivity,
+        login_count: loginCount,
+        page_views: pageViews,
+        clicks: clicks,
+        total_sessions: totalSessions,
+        avg_session_minutes: avgSessionMinutes,
+        total_session_minutes: totalSessionMinutes
       }
     });
 

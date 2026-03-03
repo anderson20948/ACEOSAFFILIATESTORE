@@ -1,44 +1,46 @@
 const LocalStrategy = require("passport-local").Strategy;
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
-const { pool } = require("./dbConfig");
+const { db } = require("./dbConfig");
 const bcrypt = require("bcrypt");
 
 function initialize(passport) {
   console.log("Initialized");
 
-  const authenticateUser = (email, password, done) => {
-    console.log(email, password);
-    pool.query(
-      `SELECT * FROM users WHERE email = $1`,
-      [email],
-      (err, results) => {
-        if (err) {
-          throw err;
-        }
-        console.log(results.rows);
+  const authenticateUser = async (email, password, done) => {
+    try {
+      console.log(email, password);
+      const { data: users, error } = await db
+        .from("users")
+        .select("*")
+        .eq("email", email);
 
-        if (results.rows.length > 0) {
-          const user = results.rows[0];
+      if (error) throw error;
+      console.log(users);
 
-          bcrypt.compare(password, user.password, (err, isMatch) => {
-            if (err) {
-              console.log(err);
-            }
-            if (isMatch) {
-              return done(null, user);
-            } else {
-              //password is incorrect
-              return done(null, false, { message: "Invalid choice" });
-            }
-          });
-        } else {
-          // No user
-          return done(null, false, {
-            message: "Invalid choice"
-          });
-        }
+      if (users.length > 0) {
+        const user = users[0];
+
+        bcrypt.compare(password, user.password, (err, isMatch) => {
+          if (err) {
+            console.log(err);
+            return done(err);
+          }
+          if (isMatch) {
+            return done(null, user);
+          } else {
+            //password is incorrect
+            return done(null, false, { message: "Invalid choice" });
+          }
+        });
+      } else {
+        // No user
+        return done(null, false, {
+          message: "Invalid choice"
+        });
       }
-    );
+    } catch (err) {
+      return done(err);
+    }
   };
 
   passport.use(
@@ -59,18 +61,28 @@ function initialize(passport) {
       async (accessToken, refreshToken, profile, done) => {
         try {
           // Check if user already exists with this Google ID
-          let user = await pool.query("SELECT * FROM users WHERE email = $1", [profile.emails[0].value]);
+          const email = profile.emails[0].value;
+          let { data: users, error: fetchError } = await db
+            .from("users")
+            .select("*")
+            .eq("email", email);
 
-          if (user.rows.length === 0) {
+          if (fetchError) throw fetchError;
+
+          if (users.length === 0) {
             // Create new user
-            const newUser = await pool.query(
-              "INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING *",
-              [profile.displayName, profile.emails[0].value, 'google-oauth-' + profile.id, 'affiliate']
-            );
-            user = newUser;
+            const { data: newUserResults, error: insertError } = await db
+              .from("users")
+              .insert([
+                { name: profile.displayName, email: email, password: 'google-oauth-' + profile.id, role: 'affiliate' }
+              ])
+              .select("*");
+
+            if (insertError) throw insertError;
+            return done(null, newUserResults[0]);
           }
 
-          return done(null, user.rows[0]);
+          return done(null, users[0]);
         } catch (err) {
           return done(err, null);
         }
@@ -86,14 +98,24 @@ function initialize(passport) {
   // In deserializeUser that key is matched with the in memory array / database or any data resource.
   // The fetched object is attached to the request object as req.user
 
-  passport.deserializeUser((id, done) => {
-    pool.query(`SELECT * FROM users WHERE id = $1`, [id], (err, results) => {
-      if (err) {
-        return done(err);
+  passport.deserializeUser(async (id, done) => {
+    try {
+      const { data: users, error } = await db
+        .from("users")
+        .select("*")
+        .eq("id", id);
+
+      if (error) throw error;
+
+      if (users.length > 0) {
+        console.log(`ID is ${users[0].id}`);
+        return done(null, users[0]);
+      } else {
+        return done(new Error("User not found"));
       }
-      console.log(`ID is ${results.rows[0].id}`);
-      return done(null, results.rows[0]);
-    });
+    } catch (err) {
+      return done(err);
+    }
   });
 }
 

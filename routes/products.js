@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { pool: db } = require('../dbConfig');
+const { db } = require('../dbConfig');
 const multer = require('multer');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
@@ -35,11 +35,15 @@ router.post('/upload', verifyAuth, upload.single('image'), async (req, res) => {
     }
 
     try {
-        const newProduct = await db.query(
-            'INSERT INTO products (owner_id, title, description, price, image_url, status) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-            [req.user.id, title, description, price, imageUrl, 'pending']
-        );
-        res.status(201).json({ message: 'Product uploaded and pending approval.', product: newProduct.rows[0] });
+        const { data: newProduct, error } = await db
+            .from("products")
+            .insert([
+                { owner_id: req.user.id, title, description, price, image_url: imageUrl, status: 'pending' }
+            ])
+            .select("*");
+
+        if (error) throw error;
+        res.status(201).json({ message: 'Product uploaded and pending approval.', product: newProduct[0] });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Error uploading product.' });
@@ -49,8 +53,14 @@ router.post('/upload', verifyAuth, upload.single('image'), async (req, res) => {
 // Get approved products for affiliates
 router.get('/available', async (req, res) => {
     try {
-        const products = await db.query('SELECT * FROM products WHERE status = $1 ORDER BY created_at DESC', ['approved']);
-        res.json(products.rows);
+        const { data: products, error } = await db
+            .from("products")
+            .select("*")
+            .eq("status", "approved")
+            .order("created_at", { ascending: false });
+
+        if (error) throw error;
+        res.json(products);
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Error fetching products.' });
@@ -68,18 +78,25 @@ router.post('/submit', verifyAuth, async (req, res) => {
     }
 
     try {
-        const result = await db.query(
-            'INSERT INTO products (title, description, price, category, owner_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-            [title, description, price, category || 'General', userId]
-        );
+        const { data: result, error: insertError } = await db
+            .from("products")
+            .insert([
+                { title, description, price, category: category || 'General', owner_id: userId }
+            ])
+            .select("*");
+
+        if (insertError) throw insertError;
 
         // Log the activity
-        await db.query(
-            'INSERT INTO system_logs (user_id, activity_type, details, ip_address) VALUES ($1, $2, $3, $4)',
-            [userId, 'coupon_submission', `Submitted coupon: ${title}`, ip]
-        );
+        const { error: logError } = await db
+            .from("system_logs")
+            .insert([
+                { user_id: userId, activity_type: 'coupon_submission', details: `Submitted coupon: ${title}`, ip_address: ip }
+            ]);
 
-        res.status(201).json({ message: 'Coupon submitted successfully for approval', product: result.rows[0] });
+        if (logError) throw logError;
+
+        res.status(201).json({ message: 'Coupon submitted successfully for approval', product: result[0] });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Error submitting coupon' });

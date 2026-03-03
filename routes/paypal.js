@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const paypal = require('@paypal/checkout-server-sdk');
 const { client, MERCHANT_CONFIG } = require('../paypalConfig');
-const { pool } = require('../dbConfig');
+const { db } = require('../dbConfig');
 
 // Create PayPal Order
 router.post('/create-order', async (req, res) => {
@@ -10,12 +10,17 @@ router.post('/create-order', async (req, res) => {
 
     try {
         // Get product details
-        const product = await pool.query('SELECT * FROM products WHERE id = $1', [productId]);
-        if (product.rows.length === 0) {
+        const { data: products, error: fetchError } = await db
+            .from('products')
+            .select('*')
+            .eq('id', productId);
+
+        if (fetchError) throw fetchError;
+        if (products.length === 0) {
             return res.status(404).json({ success: false, message: 'Product not found.' });
         }
 
-        const productData = product.rows[0];
+        const productData = products[0];
         const price = parseFloat(productData.price);
 
         // Calculate amounts
@@ -63,10 +68,18 @@ router.post('/create-order', async (req, res) => {
         const order = await client().execute(request);
 
         // Store order details temporarily
-        await pool.query(
-            'INSERT INTO payments (user_id, product_id, order_id, amount, status, created_at) VALUES ($1, $2, $3, $4, $5, NOW()) ON CONFLICT (order_id) DO UPDATE SET status = $5',
-            [affiliateId || null, productId, order.result.id, price, 'pending']
-        );
+        const { error: upsertError } = await db
+            .from('payments')
+            .upsert({
+                user_id: affiliateId || null,
+                product_id: productId,
+                order_id: order.result.id,
+                amount: price,
+                status: 'pending',
+                created_at: new Date()
+            }, { onConflict: 'order_id' });
+
+        if (upsertError) throw upsertError;
 
         res.json({
             success: true,
@@ -98,17 +111,23 @@ router.post('/capture-order', async (req, res) => {
             const platformFee = amount * MERCHANT_CONFIG.platformFee;
 
             // Update payment record
-            const paymentUpdate = await pool.query(
-                'UPDATE payments SET payer_id = $1, payment_id = $2, status = $3 WHERE order_id = $4 RETURNING *',
-                [payerId, captureId, 'completed', orderId]
-            );
+            const { data: paymentUpdate, error: updateError } = await db
+                .from('payments')
+                .update({ payer_id: payerId, payment_id: captureId, status: 'completed' })
+                .eq('order_id', orderId)
+                .select("*");
+
+            if (updateError) throw updateError;
 
             // Create commission record for affiliate
             if (affiliateId && affiliateCommission > 0) {
-                await pool.query(
-                    'INSERT INTO commissions (user_id, amount, status) VALUES ($1, $2, $3)',
-                    [affiliateId, affiliateCommission, 'pending']
-                );
+                const { error: commissionError } = await db
+                    .from('commissions')
+                    .insert([
+                        { user_id: affiliateId, amount: affiliateCommission, status: 'pending' }
+                    ]);
+
+                if (commissionError) throw commissionError;
             }
 
             // Log platform fee (this would go to platform revenue)
@@ -117,7 +136,7 @@ router.post('/capture-order', async (req, res) => {
             res.json({
                 success: true,
                 message: 'Payment completed successfully!',
-                payment: paymentUpdate.rows[0],
+                payment: paymentUpdate[0],
                 commission: affiliateCommission.toFixed(2)
             });
         } else {
@@ -140,24 +159,37 @@ router.post('/capture', async (req, res) => {
 
     try {
         // Update existing payment record or create new one
-        const result = await pool.query(
-            'INSERT INTO payments (user_id, product_id, order_id, payer_id, payment_id, amount, status) VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (order_id) DO UPDATE SET payer_id = $4, payment_id = $5, status = $7 RETURNING *',
-            [userId || null, productId, orderID, payerID, paymentID, amount, 'completed']
-        );
+        const { data: result, error: upsertError } = await db
+            .from('payments')
+            .upsert({
+                user_id: userId || null,
+                product_id: productId,
+                order_id: orderID,
+                payer_id: payerID,
+                payment_id: paymentID,
+                amount: amount,
+                status: 'completed'
+            }, { onConflict: 'order_id' })
+            .select("*");
+
+        if (upsertError) throw upsertError;
 
         // Create affiliate commission if user provided
         if (userId && amount > 0) {
             const commission = parseFloat(amount) * MERCHANT_CONFIG.affiliateCommission;
-            await pool.query(
-                'INSERT INTO commissions (user_id, amount, status) VALUES ($1, $2, $3)',
-                [userId, commission, 'pending']
-            );
+            const { error: commissionError } = await db
+                .from('commissions')
+                .insert([
+                    { user_id: userId, amount: commission, status: 'pending' }
+                ]);
+
+            if (commissionError) throw commissionError;
         }
 
         res.json({
             success: true,
             message: 'Payment recorded successfully.',
-            payment: result.rows[0]
+            payment: result[0]
         });
     } catch (err) {
         console.error('Error recording payment:', err);

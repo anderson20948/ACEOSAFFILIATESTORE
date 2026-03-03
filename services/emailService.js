@@ -1,7 +1,7 @@
 // Email Service for sending notifications
 // This is a mock implementation - in production, integrate with SendGrid, Mailgun, etc.
 
-const { pool } = require('../dbConfig');
+const { db } = require('../dbConfig');
 
 class EmailService {
     constructor() {
@@ -183,18 +183,21 @@ class EmailService {
             };
 
             // Store email in database
-            await pool.query(`
-                INSERT INTO email_logs (recipient_email, recipient_name, subject, message, email_type, status, sent_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7)
-            `, [
-                emailData.recipient_email,
-                emailData.recipient_name,
-                emailData.subject,
-                emailData.message,
-                emailData.email_type,
-                emailData.status,
-                emailData.sent_at
-            ]);
+            const { error: insertError } = await db
+                .from('email_logs')
+                .insert([
+                    {
+                        recipient_email: emailData.recipient_email,
+                        recipient_name: emailData.recipient_name,
+                        subject: emailData.subject,
+                        message: emailData.message,
+                        email_type: emailData.email_type,
+                        status: emailData.status,
+                        sent_at: emailData.sent_at
+                    }
+                ]);
+
+            if (insertError) throw insertError;
 
             // Log to console (in production, this would send actual email)
             console.log(`📧 Email sent to ${recipientEmail}: ${template.subject}`);
@@ -207,18 +210,20 @@ class EmailService {
             console.error('Error sending email:', error);
 
             // Log failed email
-            await pool.query(`
-                INSERT INTO email_logs (recipient_email, recipient_name, subject, message, email_type, status, error_message, sent_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
-            `, [
-                recipientEmail,
-                recipientName,
-                templateKey,
-                'Failed to send email',
-                templateKey,
-                'failed',
-                error.message
-            ]);
+            await db
+                .from('email_logs')
+                .insert([
+                    {
+                        recipient_email: recipientEmail,
+                        recipient_name: recipientName,
+                        subject: templateKey,
+                        message: 'Failed to send email',
+                        email_type: templateKey,
+                        status: 'failed',
+                        error_message: error.message,
+                        sent_at: new Date()
+                    }
+                ]);
 
             return { success: false, error: error.message };
         }

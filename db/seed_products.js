@@ -1,4 +1,4 @@
-const { pool } = require('../dbConfig');
+const { db } = require('../dbConfig');
 
 const products = [
     // Amazon Products
@@ -125,13 +125,12 @@ const products = [
 async function seed() {
     console.log("Seeding products...");
     try {
-        for (const product of products) {
-            await pool.query(
-                "INSERT INTO products (title, description, price, category, image_url, status) VALUES ($1, $2, $3, $4, $5, $6)",
-                [product.title, product.description, product.price, product.category, product.image_url, product.status]
-            );
-            console.log(`Seeded: ${product.title}`);
-        }
+        const { error } = await db
+            .from('products')
+            .insert(products);
+
+        if (error) throw error;
+
         console.log("Seeding completed successfully!");
         process.exit(0);
     } catch (err) {

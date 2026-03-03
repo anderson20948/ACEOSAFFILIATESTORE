@@ -1,14 +1,14 @@
 require("dotenv").config();
+const { createClient } = require("@supabase/supabase-js");
 
-const { Pool } = require("pg");
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 
-const isProduction = process.env.NODE_ENV === "production";
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error("CRITICAL: SUPABASE_URL or SUPABASE_ANON_KEY is missing from .env");
+  process.exit(1);
+}
 
-const connectionString = `postgresql://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_DATABASE}`;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-const pool = new Pool({
-  connectionString: isProduction ? process.env.DATABASE_URL : connectionString,
-  ssl: isProduction
-});
-
-module.exports = { pool };
+module.exports = { supabase, db: supabase };
