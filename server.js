@@ -16,7 +16,11 @@ const initializePassport = require("./passportConfig");
 
 initializePassport(passport);
 
-// Super Admin Configuration
+// Ad revenue constants
+const AD_IMPRESSION_VALUE = 0.001;
+const AD_CLICK_VALUE = 0.05;
+
+// Passport configuration
 const SUPER_ADMINS = ['tsumamngindodenis@gmail.com', 'malomoanderson@gmail.com'];
 
 // Pre-defined admin users with their credentials
@@ -1556,24 +1560,21 @@ app.post("/api/ads/impression", async (req, res) => {
   const { adId, userId } = req.body;
 
   try {
-    // Record impression
+    // Record impression in logs
     const { error: logError } = await db
       .from('ad_revenue_logs')
       .insert([
-        { ad_id: adId, user_id: userId || null, revenue_type: 'impression', amount: adSystem.impressionValue, created_at: new Date() }
+        { ad_id: adId, user_id: userId || null, revenue_type: 'impression', amount: AD_IMPRESSION_VALUE, created_at: new Date() }
       ]);
 
     if (logError) throw logError;
 
-    // Update ad impression count
-    const { error: updateError } = await db.rpc('increment_ad_impressions', { ad_id_param: adId });
+    // Increment ad impression count
+    await db.rpc('increment_ad_impressions', { ad_id_param: adId });
 
-    // If RPC doesn't exist, we can use a regular update (though not atomic in the same way)
-    if (updateError) {
-      await db.from('system_ads').update({
-        impressions: db.raw('impressions + 1'), // Supabase doesn't support db.raw in this way easily without RPC
-        updated_at: new Date()
-      }).eq('id', adId);
+    // If userId is provided, credit their balance
+    if (userId) {
+      await db.rpc('increment_user_balance', { user_id_param: userId, amount_param: AD_IMPRESSION_VALUE });
     }
 
     res.json({ success: true });
@@ -1588,30 +1589,24 @@ app.post("/api/ads/click", async (req, res) => {
   const { adId, userId } = req.body;
 
   try {
-    // Record click
+    // Record click in logs
     const { error: logError } = await db
       .from('ad_revenue_logs')
       .insert([
-        { ad_id: adId, user_id: userId || null, revenue_type: 'click', amount: adSystem.clickValue, created_at: new Date() }
+        { ad_id: adId, user_id: userId || null, revenue_type: 'click', amount: AD_CLICK_VALUE, created_at: new Date() }
       ]);
 
     if (logError) throw logError;
 
-    // Update ad click count
-    const { error: updateError } = await db
-      .from('system_ads')
-      .update({
-        clicks: db.raw('clicks + 1'),
-        revenue_generated: db.raw(`revenue_generated + ${adSystem.clickValue}`),
-        updated_at: new Date()
-      })
-      .eq('id', adId);
+    // Increment ad click count and revenue generated
+    await db.rpc('increment_ad_clicks', { ad_id_param: adId, amount_param: AD_CLICK_VALUE });
 
-    if (updateError) throw updateError;
+    // If userId is provided, credit their balance
+    if (userId) {
+      await db.rpc('increment_user_balance', { user_id_param: userId, amount_param: AD_CLICK_VALUE });
+    }
 
-    // Update system revenue
-    console.log(`Ad click tracked: $${adSystem.clickValue} for ad ${adId}`);
-
+    console.log(`Ad click tracked: $${AD_CLICK_VALUE} for ad ${adId}`);
     res.json({ success: true });
 
   } catch (err) {
@@ -1803,7 +1798,110 @@ app.post("/api/activity/bulk", async (req, res) => {
   }
 });
 
-// Get user activity summary
+// User Stats and Dashboard APIs
+app.get("/api/user/stats", ensureAuthenticated, async (req, res) => {
+  const userId = req.user.id;
+  try {
+    // Get total clicks from traffic_logs
+    const { count: totalClicks, error: clickError } = await db
+      .from('traffic_logs')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId);
+
+    if (clickError) throw clickError;
+
+    // Get earnings (commission balance)
+    const { data: userRecord, error: userError } = await db
+      .from('users')
+      .select('commission_balance')
+      .eq('id', userId)
+      .single();
+
+    if (userError) throw userError;
+
+    // Get active campaigns count
+    const { count: activeCampaigns, error: campError } = await db
+      .from('advertising_campaigns')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('status', 'active');
+
+    if (campError) throw campError;
+
+    // Get pending applications count
+    const { count: pendingApps, error: appError } = await db
+      .from('advertising_applications')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('status', 'pending');
+
+    if (appError) throw appError;
+
+    res.json({
+      success: true,
+      stats: {
+        totalClicks: totalClicks || 0,
+        earnings: userRecord?.commission_balance || 0,
+        activeCampaigns: activeCampaigns || 0,
+        pendingApplications: pendingApps || 0
+      }
+    });
+
+  } catch (err) {
+    console.error("Error fetching user stats:", err);
+    res.status(500).json({ success: false, message: "Failed to fetch dashboard statistics" });
+  }
+});
+
+app.get("/api/user/campaigns", ensureAuthenticated, async (req, res) => {
+  try {
+    const { data: campaigns, error } = await db
+      .from('advertising_campaigns')
+      .select('*')
+      .eq('user_id', req.user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    res.json({ success: true, campaigns });
+  } catch (err) {
+    console.error("Error fetching user campaigns:", err);
+    res.status(500).json({ success: false, message: "Failed to fetch campaigns" });
+  }
+});
+
+app.get("/api/user/applications", ensureAuthenticated, async (req, res) => {
+  try {
+    const { data: applications, error } = await db
+      .from('advertising_applications')
+      .select('*')
+      .eq('user_id', req.user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    res.json({ success: true, applications });
+  } catch (err) {
+    console.error("Error fetching user applications:", err);
+    res.status(500).json({ success: false, message: "Failed to fetch applications" });
+  }
+});
+
+app.get("/api/user/activities", ensureAuthenticated, async (req, res) => {
+  try {
+    const { data: activities, error } = await db
+      .from('activities')
+      .select('*')
+      .eq('user_id', req.user.id)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (error) throw error;
+    res.json(activities);
+  } catch (err) {
+    console.error("Error fetching user activities:", err);
+    res.status(500).json({ success: false, message: "Failed to fetch activity reports" });
+  }
+});
+
 app.get("/api/activity/user-summary/:userId", checkSuperAdmin, async (req, res) => {
   const userId = req.params.userId;
 

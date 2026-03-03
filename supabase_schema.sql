@@ -179,3 +179,33 @@ ALTER TABLE email_logs DISABLE ROW LEVEL SECURITY;
 ALTER TABLE user_activity_logs DISABLE ROW LEVEL SECURITY;
 ALTER TABLE user_sessions DISABLE ROW LEVEL SECURITY;
 ALTER TABLE admin_notifications DISABLE ROW LEVEL SECURITY;
+-- RPC Functions for atomic increments
+CREATE OR REPLACE FUNCTION increment_ad_impressions(ad_id_param UUID)
+RETURNS void AS $$
+BEGIN
+  UPDATE system_ads
+  SET impressions = impressions + 1,
+      updated_at = NOW()
+  WHERE id = ad_id_param;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION increment_ad_clicks(ad_id_param UUID, amount_param DECIMAL)
+RETURNS void AS $$
+BEGIN
+  UPDATE system_ads
+  SET clicks = clicks + 1,
+      revenue_generated = revenue_generated + amount_param,
+      updated_at = NOW()
+  WHERE id = ad_id_param;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION increment_user_balance(user_id_param UUID, amount_param DECIMAL)
+RETURNS void AS $$
+BEGIN
+  UPDATE users
+  SET commission_balance = commission_balance + amount_param
+  WHERE id = user_id_param;
+END;
+$$ LANGUAGE plpgsql;

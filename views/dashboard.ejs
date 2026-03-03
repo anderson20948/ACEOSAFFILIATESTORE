@@ -59,6 +59,47 @@
         opacity: 1;
       }
     }
+
+    /* Stats Grid Styles */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .stat-card {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      text-align: center;
+      transition: transform 0.2s;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .stat-card h4 {
+      margin: 0;
+      font-size: 14px;
+      color: #666;
+      text-transform: uppercase;
+    }
+
+    .stat-card .value {
+      font-size: 28px;
+      font-weight: 700;
+      margin: 10px 0;
+      color: #333;
+    }
+
+    .stat-card i {
+      font-size: 24px;
+      margin-bottom: 10px;
+      color: #007bff;
+    }
   </style>
 </head>
 
@@ -91,8 +132,28 @@
 
     <!-- Main View -->
     <main class="dashboard-main">
-      <h1 class="page-title">Make more. Keep more.</h1>
-      <p class="page-subtitle">Access radically simple tools to monetize your content and compete at scale.</p>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <i class="fa fa-dollar"></i>
+          <h4>Total Earnings</h4>
+          <div class="value" id="stat-earnings">$0.00</div>
+        </div>
+        <div class="stat-card">
+          <i class="fa fa-mouse-pointer"></i>
+          <h4>Total Clicks</h4>
+          <div class="value" id="stat-clicks">0</div>
+        </div>
+        <div class="stat-card">
+          <i class="fa fa-bullhorn"></i>
+          <h4>Active Campaigns</h4>
+          <div class="value" id="stat-campaigns">0</div>
+        </div>
+        <div class="stat-card">
+          <i class="fa fa-file-text-o"></i>
+          <h4>Pending Apps</h4>
+          <div class="value" id="stat-applications">0</div>
+        </div>
+      </div>
 
       <div class="card-grid">
         <!-- ... existing cards ... -->
@@ -138,6 +199,19 @@
         showToast('Login successful! Welcome back.', 'success');
       }
 
+      // Update Stats UI from event
+      window.addEventListener('aceos_stats_updated', (e) => {
+        const stats = e.detail;
+        if (stats) {
+          document.getElementById('stat-earnings').innerText = `$${parseFloat(stats.earnings).toFixed(2)}`;
+          document.getElementById('stat-clicks').innerText = stats.totalClicks;
+          document.getElementById('stat-campaigns').innerText = stats.activeCampaigns;
+          document.getElementById('stat-applications').innerText = stats.pendingApplications;
+        }
+      });
+
+      // Load User Reports
+
       // Load User Reports
       async function loadUserReports() {
         try {
@@ -157,6 +231,8 @@
           document.getElementById('user-reports-list').innerHTML = '<p>Error loading reports.</p>';
         }
       }
+
+      // Initial loads
       loadUserReports();
     });
   </script>

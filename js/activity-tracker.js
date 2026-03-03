@@ -11,6 +11,13 @@ class ActivityTracker {
         this.isTracking = false;
         this.heartbeatInterval = null;
         this.bufferFlushInterval = null;
+        this.statsInterval = null;
+        this.stats = {
+            earnings: 0,
+            totalClicks: 0,
+            activeCampaigns: 0,
+            pendingApplications: 0
+        };
     }
 
     // Initialize activity tracking
@@ -35,6 +42,12 @@ class ActivityTracker {
 
             // Start buffer flushing
             this.startBufferFlush();
+
+            // Start real-time stats fetching
+            this.startStatsFetching();
+
+            // Inject global earnings indicator
+            this.injectGlobalEarningsUI();
 
             this.isTracking = true;
             console.log('Activity tracking initialized');
@@ -268,86 +281,172 @@ class ActivityTracker {
     }
 
     // Start buffer flushing interval
-    startBufferFlush() {
-        this.bufferFlushInterval = setInterval(() => {
-            this.flushActivities();
-        }, 30000); // Every 30 seconds
+}, 30000); // Every 30 seconds
     }
+
+// Start fetching user stats periodically
+startStatsFetching() {
+    this.fetchUserStats(); // Initial fetch
+    this.statsInterval = setInterval(() => {
+        this.fetchUserStats();
+    }, 30000); // Every 30 seconds
+}
+
+    // Fetch user stats from server
+    async fetchUserStats() {
+    if (!this.userId) return;
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/user/stats', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+                this.stats = data.stats;
+
+                // Dispatch custom event for UI components to listen to
+                const event = new CustomEvent('aceos_stats_updated', {
+                    detail: this.stats
+                });
+                window.dispatchEvent(event);
+
+                // Update global UI indicator
+                this.updateGlobalIndicator();
+            }
+        }
+    } catch (error) {
+        console.error('Error fetching user stats:', error);
+    }
+}
+
+// Inject a sticky earnings indicator to the page
+injectGlobalEarningsUI() {
+    if (document.getElementById('global-earnings-indicator')) return;
+
+    const indicator = document.createElement('div');
+    indicator.id = 'global-earnings-indicator';
+    indicator.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(40, 167, 69, 0.9);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 50px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 9999;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.2);
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+        `;
+
+    indicator.innerHTML = `
+            <i class="fa fa-dollar"></i>
+            <span id="global-earnings-value">$0.00</span>
+        `;
+
+    indicator.onclick = () => {
+        window.location.href = 'dashboard-advertising.html';
+    };
+
+    document.body.appendChild(indicator);
+}
+
+// Update the values in the global indicator
+updateGlobalIndicator() {
+    const valueSpan = document.getElementById('global-earnings-value');
+    if (valueSpan && this.stats) {
+        valueSpan.textContent = `$${parseFloat(this.stats.earnings || 0).toFixed(2)}`;
+    }
+}
 
     // Update user total uptime
     async updateUserUptime(currentSessionUptime) {
-        try {
-            await fetch('/api/activity/update-uptime', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userId: this.userId,
-                    sessionUptime: currentSessionUptime
-                })
-            });
-        } catch (error) {
-            console.error('Error updating user uptime:', error);
-        }
+    try {
+        await fetch('/api/activity/update-uptime', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userId: this.userId,
+                sessionUptime: currentSessionUptime
+            })
+        });
+    } catch (error) {
+        console.error('Error updating user uptime:', error);
     }
+}
 
     // End current session
     async endSession() {
-        if (!this.sessionId) return;
+    if (!this.sessionId) return;
 
-        try {
-            const sessionDuration = this.sessionStartTime ?
-                Math.floor((Date.now() - this.sessionStartTime.getTime()) / (1000 * 60)) : 0;
+    try {
+        const sessionDuration = this.sessionStartTime ?
+            Math.floor((Date.now() - this.sessionStartTime.getTime()) / (1000 * 60)) : 0;
 
-            await fetch('/api/activity/end-session', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    sessionId: this.sessionId,
-                    duration: sessionDuration
-                })
-            });
+        await fetch('/api/activity/end-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                sessionId: this.sessionId,
+                duration: sessionDuration
+            })
+        });
 
-            console.log('Session ended:', this.sessionId);
-        } catch (error) {
-            console.error('Error ending session:', error);
-        }
-
-        // Clear session data
-        sessionStorage.removeItem('activity_session_id');
-        this.sessionId = null;
-        this.sessionStartTime = null;
+        console.log('Session ended:', this.sessionId);
+    } catch (error) {
+        console.error('Error ending session:', error);
     }
+
+    // Clear session data
+    sessionStorage.removeItem('activity_session_id');
+    this.sessionId = null;
+    this.sessionStartTime = null;
+}
 
     // Get client IP (approximate, server will get real IP)
     async getClientIP() {
-        try {
-            const response = await fetch('https://api.ipify.org?format=json');
-            const data = await response.json();
-            return data.ip;
-        } catch (error) {
-            return 'unknown';
-        }
+    try {
+        const response = await fetch('https://api.ipify.org?format=json');
+        const data = await response.json();
+        return data.ip;
+    } catch (error) {
+        return 'unknown';
+    }
+}
+
+// Stop tracking (for cleanup)
+stop() {
+    if (this.heartbeatInterval) {
+        clearInterval(this.heartbeatInterval);
+    }
+    if (this.bufferFlushInterval) {
+        clearInterval(this.bufferFlushInterval);
+    }
+    if (this.statsInterval) {
+        clearInterval(this.statsInterval);
     }
 
-    // Stop tracking (for cleanup)
-    stop() {
-        if (this.heartbeatInterval) {
-            clearInterval(this.heartbeatInterval);
-        }
-        if (this.bufferFlushInterval) {
-            clearInterval(this.bufferFlushInterval);
-        }
-
-        this.endSession();
-        this.isTracking = false;
-    }
+    this.endSession();
+    this.isTracking = false;
+}
 }
 
 // Global activity tracker instance
 const activityTracker = new ActivityTracker();
 
 // Initialize activity tracking when DOM is loaded (only for logged-in users)
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const userId = localStorage.getItem('userId');
     if (userId) {
         activityTracker.init();

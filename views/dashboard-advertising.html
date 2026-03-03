@@ -48,7 +48,7 @@
             background: white;
             padding: 25px;
             border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .form-group {
@@ -100,17 +100,31 @@
             font-size: 18px;
         }
 
-        .facebook { background: #1877f2; }
-        .twitter { background: #1da1f2; }
-        .instagram { background: linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%); }
-        .youtube { background: #ff0000; }
-        .linkedin { background: #0077b5; }
+        .facebook {
+            background: #1877f2;
+        }
+
+        .twitter {
+            background: #1da1f2;
+        }
+
+        .instagram {
+            background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+        }
+
+        .youtube {
+            background: #ff0000;
+        }
+
+        .linkedin {
+            background: #0077b5;
+        }
 
         .campaign-card {
             background: white;
             padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
             border-left: 4px solid #007bff;
         }
@@ -123,10 +137,25 @@
             text-transform: uppercase;
         }
 
-        .status-pending { background: #fff3cd; color: #856404; }
-        .status-approved { background: #d4edda; color: #155724; }
-        .status-active { background: #d1ecf1; color: #0c5460; }
-        .status-rejected { background: #f8d7da; color: #721c24; }
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-approved {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-active {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .status-rejected {
+            background: #f8d7da;
+            color: #721c24;
+        }
 
         .stats-grid {
             display: grid;
@@ -139,7 +168,7 @@
             background: white;
             padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             text-align: center;
         }
 
@@ -175,8 +204,15 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .fade-in {
@@ -248,13 +284,16 @@
             <div id="overview" class="tab-content active">
                 <div class="dash-card">
                     <h1 class="page-title">Aceos Advertising Platform</h1>
-                    <p>Turn your social media presence and websites into revenue-generating advertising platforms. Our system automatically displays relevant ads to your audience and you earn commissions on every click and conversion.</p>
+                    <p>Turn your social media presence and websites into revenue-generating advertising platforms. Our
+                        system automatically displays relevant ads to your audience and you earn commissions on every
+                        click and conversion.</p>
 
                     <div class="card-grid" style="margin-top: 30px;">
                         <div class="dash-card" style="text-align:center;">
                             <i class="fa fa-rocket" style="font-size: 30px; color: #007bff; margin-bottom: 15px;"></i>
                             <h4>Automated Advertising</h4>
-                            <p>Our AI-driven system matches the best ads to your audience demographics and interests.</p>
+                            <p>Our AI-driven system matches the best ads to your audience demographics and interests.
+                            </p>
                         </div>
                         <div class="dash-card" style="text-align:center;">
                             <i class="fa fa-dollar" style="font-size: 30px; color: #28a745; margin-bottom: 15px;"></i>
@@ -287,7 +326,9 @@
 
                         <div class="form-group">
                             <label>Social Media Accounts (Optional)</label>
-                            <p style="font-size: 14px; color: #666; margin-bottom: 15px;">Add your social media accounts where you want to display ads. We'll automatically integrate advertising into your posts and stories.</p>
+                            <p style="font-size: 14px; color: #666; margin-bottom: 15px;">Add your social media accounts
+                                where you want to display ads. We'll automatically integrate advertising into your posts
+                                and stories.</p>
                             <div class="social-media-inputs">
                                 <div class="social-input-group">
                                     <div class="social-icon facebook"><i class="fa fa-facebook"></i></div>
@@ -314,18 +355,21 @@
 
                         <div class="form-group">
                             <label>Website URLs (Optional)</label>
-                            <textarea id="websiteUrls" placeholder="Enter your website URLs (one per line) where you want to integrate advertising banners and widgets"></textarea>
+                            <textarea id="websiteUrls"
+                                placeholder="Enter your website URLs (one per line) where you want to integrate advertising banners and widgets"></textarea>
                         </div>
 
                         <div class="form-group">
                             <label>PayPal Email for Payments *</label>
                             <input type="email" id="paypalEmail" placeholder="your-paypal@email.com" required>
-                            <small style="color: #666; font-size: 12px;">All earnings and commissions will be sent to this PayPal account</small>
+                            <small style="color: #666; font-size: 12px;">All earnings and commissions will be sent to
+                                this PayPal account</small>
                         </div>
 
                         <div class="form-group">
                             <label>Additional Notes</label>
-                            <textarea id="additionalNotes" placeholder="Tell us about your audience, content niche, or any specific requirements..."></textarea>
+                            <textarea id="additionalNotes"
+                                placeholder="Tell us about your audience, content niche, or any specific requirements..."></textarea>
                         </div>
 
                         <div style="text-align: center; margin-top: 30px;">
@@ -360,11 +404,37 @@
         let currentTab = 'overview';
 
         // Initialize dashboard
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             loadUserData();
-            loadDashboardStats();
             setupFormHandlers();
+
+            // Listen for global stats updates
+            window.addEventListener('aceos_stats_updated', (e) => {
+                const stats = e.detail;
+                if (stats) {
+                    updateDashboardUI(stats);
+                }
+            });
         });
+
+        function updateDashboardUI(stats) {
+            // Update Overview Stats
+            const campaignsCount = document.getElementById('campaignsCount');
+            const earningsTotal = document.getElementById('earningsTotal');
+            const clicksTotal = document.getElementById('clicksTotal');
+            const applicationsCount = document.getElementById('applicationsCount');
+
+            if (campaignsCount) campaignsCount.textContent = stats.activeCampaigns || '0';
+            if (earningsTotal) earningsTotal.textContent = `$${parseFloat(stats.earnings || 0).toFixed(2)}`;
+            if (clicksTotal) clicksTotal.textContent = stats.totalClicks || '0';
+            if (applicationsCount) applicationsCount.textContent = stats.pendingApplications || '0';
+
+            // If we are on the earnings tab, update its balance display too
+            const earningsTabTotal = document.querySelector('#earningsContent [style*="color: #28a745; font-size: 32px;"]');
+            if (earningsTabTotal) {
+                earningsTabTotal.textContent = `$${parseFloat(stats.earnings || 0).toFixed(4)}`;
+            }
+        }
 
         function showTab(tabName) {
             // Hide all tabs
@@ -406,10 +476,12 @@
                 if (response.ok) {
                     const userData = await response.json();
                     currentUser = userData;
-                    document.getElementById('userWelcome').textContent = `Welcome, ${userData.name}`;
-
                     // Update status banner based on advertising status
                     updateStatusBanner(userData.advertising_status);
+
+                    // Also update welcome name if found
+                    const welcomeUserSpan = document.getElementById('userWelcome');
+                    if (welcomeUserSpan) welcomeUserSpan.textContent = `Welcome, ${userData.name}`;
                 }
             } catch (error) {
                 console.error('Error loading user data:', error);
@@ -441,17 +513,6 @@
             }
         }
 
-        async function loadDashboardStats() {
-            try {
-                // Load mock data - replace with actual API calls
-                document.getElementById('campaignsCount').textContent = '2';
-                document.getElementById('earningsTotal').textContent = '$127.50';
-                document.getElementById('clicksTotal').textContent = '1,247';
-                document.getElementById('applicationsCount').textContent = '1';
-            } catch (error) {
-                console.error('Error loading dashboard stats:', error);
-            }
-        }
 
         function setupFormHandlers() {
             const form = document.getElementById('advertisingApplicationForm');
@@ -515,46 +576,30 @@
             campaignsList.innerHTML = '<div style="text-align: center; padding: 40px;"><i class="fa fa-spinner fa-spin" style="font-size: 24px;"></i><br>Loading campaigns...</div>';
 
             try {
-                // Mock campaign data - replace with actual API call
-                const mockCampaigns = [
-                    {
-                        id: 1,
-                        name: 'Summer Fashion Campaign',
-                        type: 'social_media',
-                        status: 'active',
-                        budget: 500.00,
-                        clicks: 245,
-                        earnings: 67.50
-                    },
-                    {
-                        id: 2,
-                        name: 'Tech Gadgets Promotion',
-                        type: 'website',
-                        status: 'pending',
-                        budget: 300.00,
-                        clicks: 0,
-                        earnings: 0.00
-                    }
-                ];
+                const response = await fetch('/api/user/campaigns', {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                });
+
+                const data = await response.json();
+                const campaigns = data.campaigns || [];
 
                 let html = '';
-                if (mockCampaigns.length === 0) {
+                if (campaigns.length === 0) {
                     html = '<div class="dash-card" style="text-align: center;"><p>No campaigns found. Apply for advertising services to get started!</p></div>';
                 } else {
-                    mockCampaigns.forEach(campaign => {
+                    campaigns.forEach(campaign => {
                         html += `
                             <div class="campaign-card">
                                 <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
                                     <div>
-                                        <h4 style="margin: 0 0 5px 0;">${campaign.name}</h4>
-                                        <p style="margin: 0; color: #666; font-size: 14px;">${campaign.type.replace('_', ' ').toUpperCase()}</p>
+                                        <h4 style="margin: 0 0 5px 0;">${campaign.campaign_name}</h4>
+                                        <p style="margin: 0; color: #666; font-size: 14px;">${campaign.campaign_type.replace('_', ' ').toUpperCase()}</p>
                                     </div>
                                     <span class="campaign-status status-${campaign.status}">${campaign.status}</span>
                                 </div>
                                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px;">
-                                    <div><strong>Budget:</strong> $${campaign.budget.toFixed(2)}</div>
-                                    <div><strong>Clicks:</strong> ${campaign.clicks}</div>
-                                    <div><strong>Earnings:</strong> $${campaign.earnings.toFixed(2)}</div>
+                                    <div><strong>Status:</strong> ${campaign.status.toUpperCase()}</div>
+                                    <div><strong>Created:</strong> ${new Date(campaign.created_at).toLocaleDateString()}</div>
                                 </div>
                             </div>
                         `;
@@ -574,52 +619,50 @@
             earningsContent.innerHTML = '<div style="text-align: center; padding: 40px;"><i class="fa fa-spinner fa-spin" style="font-size: 24px;"></i><br>Loading earnings...</div>';
 
             try {
-                // Mock earnings data - replace with actual API call
-                const earningsData = {
-                    total: 127.50,
-                    thisMonth: 89.30,
-                    pending: 23.20,
-                    recentTransactions: [
-                        { date: '2024-01-15', amount: 45.67, type: 'Ad Revenue', status: 'paid' },
-                        { date: '2024-01-10', amount: 23.45, type: 'Commission', status: 'paid' },
-                        { date: '2024-01-05', amount: 12.30, type: 'Ad Revenue', status: 'pending' }
-                    ]
-                };
+                const response = await fetch('/api/user/stats', {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                });
+                const data = await response.json();
+
+                const earningsTotal = data.stats?.earnings || 0;
+
+                // Transactions would ideally come from a ledger/logs table
+                // For now we use the logs we recorded
+                const logRes = await fetch('/api/user/activities', {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                });
+                const activities = await logRes.json();
+                const recentTransactions = activities
+                    .filter(a => a.message.includes('click') || a.message.includes('impression'))
+                    .slice(0, 10);
 
                 let html = `
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                    <div style="display: grid; grid-template-columns: 1fr; gap: 20px; margin-bottom: 30px;">
                         <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 8px;">
-                            <h4 style="margin: 0 0 10px 0; color: #28a745;">Total Earnings</h4>
-                            <div style="font-size: 24px; font-weight: bold; color: #28a745;">$${earningsData.total.toFixed(2)}</div>
-                        </div>
-                        <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 8px;">
-                            <h4 style="margin: 0 0 10px 0; color: #007bff;">This Month</h4>
-                            <div style="font-size: 24px; font-weight: bold; color: #007bff;">$${earningsData.thisMonth.toFixed(2)}</div>
-                        </div>
-                        <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 8px;">
-                            <h4 style="margin: 0 0 10px 0; color: #ffc107;">Pending</h4>
-                            <div style="font-size: 24px; font-weight: bold; color: #ffc107;">$${earningsData.pending.toFixed(2)}</div>
+                            <h4 style="margin: 0 0 10px 0; color: #28a745;">Total Advertising Balance</h4>
+                            <div style="font-size: 32px; font-weight: bold; color: #28a745;">$${parseFloat(earningsTotal).toFixed(4)}</div>
+                            <p style="font-size: 12px; color: #666; margin-top: 10px;">Balance updates in real-time as ads are viewed and clicked.</p>
                         </div>
                     </div>
 
-                    <h4>Recent Transactions</h4>
+                    <h4>Recent Activity</h4>
                     <div style="background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                 `;
 
-                earningsData.recentTransactions.forEach(transaction => {
-                    html += `
-                        <div style="padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <div style="font-weight: 500;">${transaction.type}</div>
-                                <div style="color: #666; font-size: 12px;">${transaction.date}</div>
+                if (recentTransactions.length === 0) {
+                    html += '<div style="padding: 20px; text-align: center; color: #666;">No recent activity tracked yet.</div>';
+                } else {
+                    recentTransactions.forEach(transaction => {
+                        html += `
+                            <div style="padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <div style="font-weight: 500;">${transaction.message}</div>
+                                    <div style="color: #666; font-size: 12px;">${new Date(transaction.created_at).toLocaleString()}</div>
+                                </div>
                             </div>
-                            <div style="text-align: right;">
-                                <div style="font-weight: bold; color: ${transaction.status === 'paid' ? '#28a745' : '#ffc107'};">$${transaction.amount.toFixed(2)}</div>
-                                <div style="color: #666; font-size: 12px; text-transform: capitalize;">${transaction.status}</div>
-                            </div>
-                        </div>
-                    `;
-                });
+                        `;
+                    });
+                }
 
                 html += '</div>';
                 earningsContent.innerHTML = html;
