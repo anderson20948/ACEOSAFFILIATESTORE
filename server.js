@@ -338,6 +338,23 @@ app.use("/images", express.static(path.join(__dirname, "images"), cacheOptions))
 app.use("/fonts", express.static(path.join(__dirname, "fonts"), cacheOptions));
 app.use(express.static(path.join(__dirname, "users"), cacheOptions));
 app.use(express.json());
+
+// Mount API routes
+const authRouter = require('./routes/auth');
+const productsRouter = require('./routes/products');
+const affiliateRouter = require('./routes/affiliate');
+const adminRouter = require('./routes/admin');
+const paypalRouter = require('./routes/paypal');
+const advertisingRouter = require('./routes/advertising');
+const trackingRouter = require('./routes/tracking');
+
+app.use('/api/auth', authRouter);
+app.use('/api/products', productsRouter);
+app.use('/api/affiliate', affiliateRouter);
+app.use('/api/admin', adminRouter);
+app.use('/api/paypal', paypalRouter);
+app.use('/api/advertising', advertisingRouter);
+app.use('/api/tracking', trackingRouter);
 app.use(logAction);
 
 // Pages
