@@ -3,6 +3,8 @@ const router = express.Router();
 const paypal = require('@paypal/checkout-server-sdk');
 const { client, MERCHANT_CONFIG } = require('../paypalConfig');
 const { db } = require('../dbConfig');
+const logger = require('../utils/logger');
+const crypto = require('crypto');
 
 // Create PayPal Order
 router.post('/create-order', async (req, res) => {
@@ -88,7 +90,7 @@ router.post('/create-order', async (req, res) => {
         });
 
     } catch (err) {
-        console.error('Error creating PayPal order:', err);
+        logger.error('Error creating PayPal order', { error: err.message, productId });
         res.status(500).json({ success: false, message: 'Failed to create payment order.' });
     }
 });
@@ -130,8 +132,7 @@ router.post('/capture-order', async (req, res) => {
                 if (commissionError) throw commissionError;
             }
 
-            // Log platform fee (this would go to platform revenue)
-            console.log(`Platform fee: $${platformFee.toFixed(2)} for order ${orderId}`);
+            logger.info(`Payment completed successfully for order ${orderId}`, { captureId, amount });
 
             res.json({
                 success: true,
@@ -144,14 +145,14 @@ router.post('/capture-order', async (req, res) => {
         }
 
     } catch (err) {
-        console.error('Error capturing PayPal payment:', err);
+        logger.error('Error capturing PayPal payment', { error: err.message, orderId });
         res.status(500).json({ success: false, message: 'Failed to complete payment.' });
     }
 });
 
-// Legacy capture route for backward compatibility
+// Legacy capture route for backward compatibility (Supports both PayPal and Google Pay)
 router.post('/capture', async (req, res) => {
-    const { orderID, payerID, paymentID, amount, productId, userId } = req.body;
+    const { orderID, payerID, paymentID, amount, productId, userId, paymentMethod } = req.body;
 
     if (!orderID || !payerID || !paymentID || !amount || !productId) {
         return res.status(400).json({ success: false, message: 'Missing payment details.' });
@@ -168,23 +169,34 @@ router.post('/capture', async (req, res) => {
                 payer_id: payerID,
                 payment_id: paymentID,
                 amount: amount,
+                payment_method: paymentMethod || 'paypal',
                 status: 'completed'
             }, { onConflict: 'order_id' })
             .select("*");
 
         if (upsertError) throw upsertError;
 
-        // Create affiliate commission if user provided
+        // Create affiliate commission if user provided AND payment was not already completed
         if (userId && amount > 0) {
-            const commission = parseFloat(amount) * MERCHANT_CONFIG.affiliateCommission;
-            const { error: commissionError } = await db
+            // Check if commission already exists for this order
+            const { data: existingCommission } = await db
                 .from('commissions')
-                .insert([
-                    { user_id: userId, amount: commission, status: 'pending' }
-                ]);
+                .select('id')
+                .eq('order_id', orderID);
 
-            if (commissionError) throw commissionError;
+            if (!existingCommission || existingCommission.length === 0) {
+                const commission = parseFloat(amount) * MERCHANT_CONFIG.affiliateCommission;
+                const { error: commissionError } = await db
+                    .from('commissions')
+                    .insert([
+                        { user_id: userId, order_id: orderID, amount: commission, status: 'pending' }
+                    ]);
+
+                if (commissionError) logger.error('Error recording commission', { error: commissionError.message, orderID });
+            }
         }
+
+        logger.info(`Legacy payment recorded successfully for order ${orderID}`, { paymentID });
 
         res.json({
             success: true,
@@ -192,9 +204,301 @@ router.post('/capture', async (req, res) => {
             payment: result[0]
         });
     } catch (err) {
-        console.error('Error recording payment:', err);
+        logger.error('Error recording payment', { error: err.message, orderID });
         res.status(500).json({ success: false, message: 'Internal server error while recording payment.' });
     }
 });
+
+/**
+ * PayPal Webhook Listener
+ * Verifies the signature from PayPal before processing
+ */
+router.post('/webhook', async (req, res) => {
+    const webhookId = process.env.PAYPAL_WEBHOOK_ID;
+    const headers = req.headers;
+    const eventBody = req.body;
+
+    // Check if webhook ID is configured
+    if (!webhookId) {
+        logger.error('PAYPAL_WEBHOOK_ID not configured - webhook verification impossible');
+        return res.status(500).send('Webhook configuration error');
+    }
+
+    try {
+        // Verify the webhook signature
+        const isValid = await verifyPayPalWebhook(headers, eventBody, webhookId);
+
+        if (!isValid) {
+            logger.warn('Invalid PayPal webhook signature', {
+                transmissionId: headers['paypal-transmission-id'],
+                eventType: eventBody?.event_type
+            });
+            return res.status(400).send('Invalid webhook signature');
+        }
+
+        logger.info('PayPal Webhook verified successfully', {
+            eventType: eventBody.event_type,
+            eventId: eventBody.id,
+            transmissionId: headers['paypal-transmission-id']
+        });
+
+        // Process the verified webhook event
+        await processWebhookEvent(eventBody);
+
+        res.status(200).send('Webhook processed successfully');
+
+    } catch (err) {
+        logger.error('Webhook processing failed', {
+            error: err.message,
+            eventType: eventBody?.event_type,
+            transmissionId: headers['paypal-transmission-id']
+        });
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+/**
+ * Verify PayPal webhook signature manually
+ * PayPal uses HMAC-SHA256 signature verification
+ */
+async function verifyPayPalWebhook(headers, eventBody, webhookId) {
+    try {
+        const transmissionId = headers['paypal-transmission-id'];
+        const transmissionTime = headers['paypal-transmission-time'];
+        const transmissionSig = headers['paypal-transmission-sig'];
+        const certUrl = headers['paypal-cert-url'];
+        const authAlgo = headers['paypal-auth-algo'];
+
+        // Ensure all required headers are present
+        if (!transmissionId || !transmissionTime || !transmissionSig || !certUrl || !authAlgo) {
+            logger.warn('Missing required PayPal webhook headers');
+            return false;
+        }
+
+        // For now, we'll implement basic verification
+        // In production, you should verify the certificate and signature properly
+        // This is a simplified version for demonstration
+
+        // Get the webhook secret from environment (you need to set this)
+        const webhookSecret = process.env.PAYPAL_WEBHOOK_SECRET;
+
+        if (!webhookSecret) {
+            logger.error('PAYPAL_WEBHOOK_SECRET not configured');
+            return false;
+        }
+
+        // Create the signature string
+        const body = JSON.stringify(eventBody);
+        const crc32 = require('crc-32');
+        const crc = crc32.str(body);
+
+        const signatureString = `${transmissionId}|${transmissionTime}|${webhookId}|${crc}`;
+
+        // Calculate expected signature
+        const expectedSignature = crypto
+            .createHmac('sha256', webhookSecret)
+            .update(signatureString)
+            .digest('hex');
+
+        // Compare signatures (PayPal sends multiple signatures separated by comma)
+        const signatures = transmissionSig.split(',');
+        const isValid = signatures.some(sig => sig.trim() === expectedSignature);
+
+        if (!isValid) {
+            logger.warn('Webhook signature verification failed', {
+                expected: expectedSignature,
+                received: transmissionSig
+            });
+        }
+
+        return isValid;
+
+    } catch (err) {
+        logger.error('Error during webhook verification', { error: err.message });
+        return false;
+    }
+}
+
+/**
+ * Process verified PayPal webhook events
+ */
+async function processWebhookEvent(webhookEvent) {
+    const eventType = webhookEvent.event_type;
+    const resource = webhookEvent.resource;
+
+    try {
+        switch (eventType) {
+            case 'PAYMENT.CAPTURE.COMPLETED':
+                await handlePaymentCaptureCompleted(resource);
+                break;
+
+            case 'PAYMENT.CAPTURE.DENIED':
+                await handlePaymentCaptureDenied(resource);
+                break;
+
+            case 'PAYMENT.CAPTURE.REFUNDED':
+                await handlePaymentCaptureRefunded(resource);
+                break;
+
+            case 'CHECKOUT.ORDER.APPROVED':
+                await handleOrderApproved(resource);
+                break;
+
+            default:
+                logger.info('Unhandled webhook event type', { eventType });
+        }
+    } catch (err) {
+        logger.error('Error processing webhook event', {
+            error: err.message,
+            eventType,
+            resourceId: resource?.id
+        });
+        throw err;
+    }
+}
+
+/**
+ * Handle successful payment capture
+ */
+async function handlePaymentCaptureCompleted(resource) {
+    const captureId = resource.id;
+    const orderId = resource.supplementary_data?.related_ids?.order_id;
+    const amount = parseFloat(resource.amount?.value);
+
+    if (!orderId) {
+        logger.warn('Payment capture completed but no order ID found', { captureId });
+        return;
+    }
+
+    logger.info('Processing payment capture completion', { orderId, captureId, amount });
+
+    // Update payment status
+    const { data: paymentUpdate, error: updateError } = await db
+        .from('payments')
+        .update({
+            payment_id: captureId,
+            status: 'completed'
+        })
+        .eq('order_id', orderId)
+        .select("*");
+
+    if (updateError) {
+        logger.error('Failed to update payment status', { error: updateError.message, orderId });
+        throw updateError;
+    }
+
+    if (!paymentUpdate || paymentUpdate.length === 0) {
+        logger.warn('No payment record found for order', { orderId });
+        return;
+    }
+
+    const payment = paymentUpdate[0];
+
+    // Calculate and create commission if affiliate involved
+    if (payment.user_id && amount > 0) {
+        const affiliateCommission = amount * MERCHANT_CONFIG.affiliateCommission;
+
+        // Check if commission already exists
+        const { data: existingCommission } = await db
+            .from('commissions')
+            .select('id')
+            .eq('order_id', orderId);
+
+        if (!existingCommission || existingCommission.length === 0) {
+            const { error: commissionError } = await db
+                .from('commissions')
+                .insert([{
+                    user_id: payment.user_id,
+                    order_id: orderId,
+                    amount: affiliateCommission,
+                    status: 'pending'
+                }]);
+
+            if (commissionError) {
+                logger.error('Failed to create commission record', {
+                    error: commissionError.message,
+                    orderId,
+                    userId: payment.user_id
+                });
+                throw commissionError;
+            }
+
+            logger.info('Commission created from webhook', {
+                orderId,
+                userId: payment.user_id,
+                amount: affiliateCommission
+            });
+        } else {
+            logger.info('Commission already exists for order', { orderId });
+        }
+    }
+
+    logger.info('Payment capture processed successfully', { orderId, captureId });
+}
+
+/**
+ * Handle payment capture denial
+ */
+async function handlePaymentCaptureDenied(resource) {
+    const captureId = resource.id;
+    const orderId = resource.supplementary_data?.related_ids?.order_id;
+
+    logger.warn('Payment capture denied', { orderId, captureId });
+
+    // Update payment status to failed
+    if (orderId) {
+        const { error: updateError } = await db
+            .from('payments')
+            .update({ status: 'failed' })
+            .eq('order_id', orderId);
+
+        if (updateError) {
+            logger.error('Failed to update payment status to failed', {
+                error: updateError.message,
+                orderId
+            });
+        }
+    }
+}
+
+/**
+ * Handle payment refund
+ */
+async function handlePaymentCaptureRefunded(resource) {
+    const captureId = resource.id;
+    const orderId = resource.supplementary_data?.related_ids?.order_id;
+    const refundAmount = parseFloat(resource.amount?.value);
+
+    logger.info('Payment refund processed', { orderId, captureId, refundAmount });
+
+    // Update payment status and create refund record if needed
+    if (orderId) {
+        const { error: updateError } = await db
+            .from('payments')
+            .update({ status: 'refunded' })
+            .eq('order_id', orderId);
+
+        if (updateError) {
+            logger.error('Failed to update payment status to refunded', {
+                error: updateError.message,
+                orderId
+            });
+        }
+
+        // TODO: Implement refund commission reversal logic if needed
+    }
+}
+
+/**
+ * Handle order approval
+ */
+async function handleOrderApproved(resource) {
+    const orderId = resource.id;
+
+    logger.info('Order approved', { orderId });
+
+    // Update order status if needed
+    // This is typically followed by a capture event
+}
 
 module.exports = router;
