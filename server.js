@@ -377,6 +377,23 @@ app.get("/admin", (req, res) => {
   res.redirect("/admin.html");
 });
 
+// Dashboard routes for authenticated users (both Passport session and JWT token supported)
+app.get("/dashboard-products.html", ensureAuthenticated, (req, res) => {
+  res.sendFile(path.join(__dirname, "views", "dashboard-products.html"));
+});
+
+app.get("/dashboard-commerce.html", ensureAuthenticated, (req, res) => {
+  res.sendFile(path.join(__dirname, "views", "dashboard-commerce.html"));
+});
+
+app.get("/dashboard-advertising.html", ensureAuthenticated, (req, res) => {
+  res.sendFile(path.join(__dirname, "views", "dashboard-advertising.html"));
+});
+
+app.get("/dashboard-signal.html", ensureAuthenticated, (req, res) => {
+  res.sendFile(path.join(__dirname, "views", "dashboard-signal.html"));
+});
+
 app.get("/index", (req, res) => {
   res.render("index");
 });
@@ -578,14 +595,40 @@ function ensureGuest(req, res, next) {
     // Redirect to a single dashboard route, which will handle role-based splitting
     return res.redirect("/dashboard");
   }
+  // Also check JWT token
+  const token = req.cookies.token || req.headers.authorization?.split(' ')[1];
+  if (token) {
+    try {
+      jwt.verify(token, process.env.JWT_SECRET || 'aceos-secret-key');
+      return res.redirect("/dashboard");
+    } catch (err) {
+      // Token invalid, continue to login
+    }
+  }
   next();
 }
 
 function ensureAuthenticated(req, res, next) {
+  // 1. Check Passport Session first
   if (req.isAuthenticated()) {
     return next();
   }
-  res.redirect("/users/login");
+
+  // 2. Fallback to Token verification (check both cookie and header)
+  const token = req.cookies.token || req.headers.authorization?.split(' ')[1];
+  if (!token) {
+    logger.warn('Unauthorized access attempt to protected route', { path: req.path, ip: req.ip });
+    return res.redirect("/users/login");
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'aceos-secret-key');
+    req.user = decoded;
+    return next();
+  } catch (err) {
+    logger.error('Invalid token for protected route access', { error: err.message });
+    return res.redirect("/users/login");
+  }
 }
 
 // Register Products Route
