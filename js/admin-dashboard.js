@@ -19,6 +19,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const el = document.getElementById('admin-name');
     if (el) el.textContent = adminName;
 
+    // Setup mobile menu interactions
+    setupMobileMenu();
+
     // Load all sections
     loadAllData();
 
@@ -29,20 +32,66 @@ document.addEventListener('DOMContentLoaded', () => {
     updateMobileLayout();
 });
 
+// Mobile menu setup
+function setupMobileMenu() {
+    const sidebar = document.getElementById('dashboard-sidebar');
+    const toggleBtn = document.getElementById('sidebarToggle');
+    const sidebarLinks = sidebar ? sidebar.querySelectorAll('a') : [];
+
+    if (!toggleBtn) return;
+
+    // Hamburger toggle
+    toggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        sidebar.classList.toggle('open');
+    });
+
+    // Close menu when clicking on navigation links
+    sidebarLinks.forEach(link => {
+        link.addEventListener('click', () => {
+            sidebar.classList.remove('open');
+        });
+    });
+
+    // Close menu when clicking outside
+    document.addEventListener('click', (e) => {
+        if (window.innerWidth <= 1024 && 
+            !sidebar.contains(e.target) && 
+            !toggleBtn.contains(e.target)) {
+            sidebar.classList.remove('open');
+        }
+    });
+
+    // Close menu on escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            sidebar.classList.remove('open');
+        }
+    });
+
+    // Close menu when window is resized to desktop
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 1024) {
+            sidebar.classList.remove('open');
+        }
+    });
+}
+
 function updateMobileLayout() {
     const sidebar = document.getElementById('dashboard-sidebar');
     const toggleBtn = document.getElementById('sidebarToggle');
+    const dashboardContent = document.getElementById('dashboard-content');
 
-    if (!sidebar || !toggleBtn) return;
+    if (!sidebar || !toggleBtn || !dashboardContent) return;
 
     if (window.innerWidth <= 1024) {
         sidebar.classList.remove('open');
         toggleBtn.style.display = 'inline-block';
-        document.getElementById('dashboard-content').style.marginLeft = '0';
+        dashboardContent.style.marginLeft = '0';
     } else {
         sidebar.classList.remove('open');
         toggleBtn.style.display = 'none';
-        document.getElementById('dashboard-content').style.marginLeft = '260px';
+        dashboardContent.style.marginLeft = '260px';
     }
 }
 
