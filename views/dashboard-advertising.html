@@ -276,6 +276,7 @@
             <div class="advertising-tabs">
                 <button class="tab-button active" onclick="showTab('overview')">Overview</button>
                 <button class="tab-button" onclick="showTab('apply')">Apply for Advertising</button>
+                <button class="tab-button" onclick="showTab('applications_history')">Application History</button>
                 <button class="tab-button" onclick="showTab('campaigns')">My Campaigns</button>
                 <button class="tab-button" onclick="showTab('earnings')">Earnings</button>
             </div>
@@ -381,6 +382,15 @@
                 </div>
             </div>
 
+            <div id="applications_history" class="tab-content">
+                <div class="dash-card">
+                    <h3>Your Advertising Applications</h3>
+                    <div id="applicationsList">
+                        <!-- Applications will be loaded here -->
+                    </div>
+                </div>
+            </div>
+
             <div id="campaigns" class="tab-content">
                 <div id="campaignsList">
                     <!-- Campaigns will be loaded here -->
@@ -455,6 +465,8 @@
                 loadCampaigns();
             } else if (tabName === 'earnings') {
                 loadEarnings();
+            } else if (tabName === 'applications_history') {
+                loadApplications();
             }
         }
 
@@ -477,7 +489,8 @@
                     const userData = await response.json();
                     currentUser = userData;
                     // Update status banner based on advertising status
-                    updateStatusBanner(userData.advertising_status);
+                    // Also fetch latest application for reason
+                    fetchLatestApplication(userId, token, userData.advertising_status);
 
                     // Also update welcome name if found
                     const welcomeUserSpan = document.getElementById('userWelcome');
@@ -488,7 +501,25 @@
             }
         }
 
-        function updateStatusBanner(status) {
+        async function fetchLatestApplication(userId, token, status) {
+            try {
+                const response = await fetch(`/api/affiliate/applications`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    const apps = data.applications || [];
+                    const latest = apps[0]; // Assuming sorted by created_at desc
+                    updateStatusBanner(status, latest ? latest.admin_notes : null);
+                } else {
+                    updateStatusBanner(status);
+                }
+            } catch (e) {
+                updateStatusBanner(status);
+            }
+        }
+
+        function updateStatusBanner(status, reason = null) {
             const banner = document.getElementById('statusBanner');
             const title = document.getElementById('bannerTitle');
             const message = document.getElementById('bannerMessage');
@@ -505,11 +536,18 @@
                 title.textContent = 'Advertising Active!';
                 message.textContent = 'Congratulations! Your advertising campaigns are now live. Start earning from your social media and websites.';
                 banner.style.display = 'block';
+            } else if (status === 'invited') {
+                banner.style.background = 'linear-gradient(135deg, #007bff 0%, #6610f2 100%)';
+                title.textContent = 'You\'re Invited!';
+                message.innerHTML = 'You have been invited by an admin to become an advertiser. <br><br> <a href="#" onclick="showTab(\'apply\')" style="color: white; text-decoration: underline;">Complete Your Application Now</a>';
+                banner.style.display = 'block';
             } else if (status === 'rejected') {
                 banner.style.background = 'linear-gradient(135deg, #dc3545 0%, #fd7e14 100%)';
-                title.textContent = 'Application Needs Review';
-                message.textContent = 'Your application requires some adjustments. Please check your email for details and resubmit.';
+                title.textContent = 'Application Declined';
+                message.innerHTML = `Your application was declined. ${reason ? '<strong>Reason:</strong> ' + reason : 'Please check your email for details.'} <br><br> <a href="#" onclick="showTab('apply')" style="color: white; text-decoration: underline;">Resubmit Application</a>`;
                 banner.style.display = 'block';
+            } else {
+                banner.style.display = 'none';
             }
         }
 
@@ -542,7 +580,7 @@
                     additional_notes: document.getElementById('additionalNotes').value
                 };
 
-                const response = await fetch('/api/advertising/apply', {
+                const response = await fetch('/api/affiliate/advertising/apply', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -576,7 +614,7 @@
             campaignsList.innerHTML = '<div style="text-align: center; padding: 40px;"><i class="fa fa-spinner fa-spin" style="font-size: 24px;"></i><br>Loading campaigns...</div>';
 
             try {
-                const response = await fetch('/api/user/campaigns', {
+                const response = await fetch('/api/affiliate/campaigns', {
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
                 });
 
@@ -614,12 +652,59 @@
             }
         }
 
+        async function loadApplications() {
+            const applicationsList = document.getElementById('applicationsList');
+            applicationsList.innerHTML = '<div style="text-align: center; padding: 40px;"><i class="fa fa-spinner fa-spin" style="font-size: 24px;"></i><br>Loading applications...</div>';
+
+            try {
+                const response = await fetch('/api/affiliate/applications', {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                });
+
+                const data = await response.json();
+                const applications = data.applications || [];
+
+                let html = '';
+                if (applications.length === 0) {
+                    html = '<div style="text-align: center;"><p>No applications found.</p></div>';
+                } else {
+                    html = `
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="text-align: left; border-bottom: 2px solid #eee;">
+                                    <th style="padding: 12px;">Type</th>
+                                    <th style="padding: 12px;">Status</th>
+                                    <th style="padding: 12px;">Submitted</th>
+                                    <th style="padding: 12px;">Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    applications.forEach(app => {
+                        html += `
+                            <tr style="border-bottom: 1px solid #eee;">
+                                <td style="padding: 12px;">${app.application_type}</td>
+                                <td style="padding: 12px;"><span class="campaign-status status-${app.status}">${app.status}</span></td>
+                                <td style="padding: 12px;">${new Date(app.created_at).toLocaleDateString()}</td>
+                                <td style="padding: 12px; font-size: 13px; color: #666;">${app.admin_notes || '-'}</td>
+                            </tr>
+                        `;
+                    });
+                    html += '</tbody></table>';
+                }
+                applicationsList.innerHTML = html;
+            } catch (error) {
+                console.error('Error loading applications:', error);
+                applicationsList.innerHTML = '<div style="text-align: center; color: #dc3545;">Failed to load applications</div>';
+            }
+        }
+
         async function loadEarnings() {
             const earningsContent = document.getElementById('earningsContent');
             earningsContent.innerHTML = '<div style="text-align: center; padding: 40px;"><i class="fa fa-spinner fa-spin" style="font-size: 24px;"></i><br>Loading earnings...</div>';
 
             try {
-                const response = await fetch('/api/user/stats', {
+                const response = await fetch('/api/affiliate/stats', {
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
                 });
                 const data = await response.json();

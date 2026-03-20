@@ -52,13 +52,9 @@ async function handleLogin(email, password) {
 
         // Small delay to show the success message
         setTimeout(() => {
-            // Redirect based on role
-            if (data.role === 'admin') {
-                window.location.href = 'admin.html';
-            } else {
-                window.location.href = 'dashboard-products.html';
-            }
-        }, 1000);
+            // Redirect to a single route that handles role-based logic server-side
+            window.location.href = '/dashboard';
+        }, 600);
 
     } catch (err) {
         // Reset button state
@@ -104,10 +100,22 @@ async function handleRegister() {
             body: JSON.stringify({ username: name, email: email, password: pass })
         });
 
-        if (data && data.message) {
+        if (data && data.token) {
+            // Store auth data for auto-login
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('role', data.role || 'affiliate');
+            localStorage.setItem('userId', data.id);
+            localStorage.setItem('username', data.username);
+
+            showNotification(data.message || 'Welcome to Aceos! Redirecting...', 'success');
+            setTimeout(() => {
+                window.location.href = '/dashboard';
+            }, 800);
+        } else if (data && data.message) {
+            // Fallback for when auto-login is not provided
             showNotification(data.message + ' Redirecting to login...', 'success');
             setTimeout(() => {
-                window.location.href = 'login.html?registered=success';
+                window.location.href = 'login.html';
             }, 1500);
         }
     } catch (err) {
@@ -145,11 +153,7 @@ if (currentPath.includes('dashboard') || currentPath.includes('admin.html')) {
     }
 }
 
-// Wizard Navigation
-function nextStep(step) {
-    document.querySelectorAll('.wizard-step').forEach(el => el.style.display = 'none');
-    document.getElementById('step' + step).style.display = 'block';
-}
+// Wizard Navigation - REMOVED (No longer used in simplified form)
 
 // Password Toggle logic
 document.addEventListener('click', (e) => {

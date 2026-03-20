@@ -5,11 +5,16 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aceos Admin - Pending Approvals</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
     <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet">
-    <link rel="stylesheet" href="css/font-awesome.css">
+    <link rel="stylesheet" href="/cdn/font-awesome.css" onload="this.onload=null;" onerror="this.onerror=null;this.href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"></noscript>
     <link rel="stylesheet" href="css/dashboard.css">
     <link rel="stylesheet" href="css/style.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/cdn/chart.js" onload="this.onload=null;" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/chart.js'"></script>
+    <noscript><script src="https://cdn.jsdelivr.net/npm/chart.js"></script></noscript>
     <!-- For product card styles maybe, or just inline -->
     <style>
         .product-card {
@@ -66,7 +71,7 @@
             background: white;
             padding: 15px;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             text-align: center;
         }
 
@@ -82,9 +87,17 @@
             margin-top: 5px;
         }
 
-        .metric-good { color: #28a745 !important; }
-        .metric-warning { color: #ffc107 !important; }
-        .metric-critical { color: #dc3545 !important; }
+        .metric-good {
+            color: #28a745 !important;
+        }
+
+        .metric-warning {
+            color: #ffc107 !important;
+        }
+
+        .metric-critical {
+            color: #dc3545 !important;
+        }
 
         .charts-section {
             display: grid;
@@ -97,7 +110,7 @@
             background: white;
             padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .chart-container h3 {
@@ -110,7 +123,7 @@
             background: white;
             padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .performance-grid {
@@ -127,9 +140,17 @@
             border-left: 4px solid #007bff;
         }
 
-        .performance-item.server { border-left-color: #28a745; }
-        .performance-item.database { border-left-color: #ffc107; }
-        .performance-item.api { border-left-color: #dc3545; }
+        .performance-item.server {
+            border-left-color: #28a745;
+        }
+
+        .performance-item.database {
+            border-left-color: #ffc107;
+        }
+
+        .performance-item.api {
+            border-left-color: #dc3545;
+        }
 
         .performance-item h4 {
             margin: 0 0 10px 0;
@@ -177,8 +198,13 @@
             transition: width 0.3s ease;
         }
 
-        .progress-fill.warning { background: linear-gradient(90deg, #ffc107, #fd7e14); }
-        .progress-fill.critical { background: linear-gradient(90deg, #dc3545, #fd7e14); }
+        .progress-fill.warning {
+            background: linear-gradient(90deg, #ffc107, #fd7e14);
+        }
+
+        .progress-fill.critical {
+            background: linear-gradient(90deg, #dc3545, #fd7e14);
+        }
 
         /* Admin Dashboard Enhancements */
         .admin-tabs {
@@ -227,7 +253,7 @@
             background: white;
             padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             margin-bottom: 15px;
             border-left: 4px solid #007bff;
         }
@@ -266,7 +292,7 @@
             background: white;
             border-radius: 10px;
             overflow: hidden;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .user-activity-table table {
@@ -295,10 +321,25 @@
             text-transform: uppercase;
         }
 
-        .type-login { background: #d4edda; color: #155724; }
-        .type-logout { background: #f8d7da; color: #721c24; }
-        .type-page_view { background: #d1ecf1; color: #0c5460; }
-        .type-campaign_create { background: #fff3cd; color: #856404; }
+        .type-login {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .type-logout {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .type-page_view {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .type-campaign_create {
+            background: #fff3cd;
+            color: #856404;
+        }
 
         .system-overview {
             display: grid;
@@ -311,7 +352,7 @@
             background: white;
             padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .overview-card h3 {
@@ -346,7 +387,7 @@
             background: white;
             padding: 15px;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             margin-bottom: 10px;
             border-left: 4px solid #007bff;
             cursor: pointer;
@@ -355,7 +396,7 @@
 
         .notification-item:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
         }
 
         .notification-item.unread {
@@ -385,14 +426,20 @@
             font-size: 14px;
         }
 
-        .priority-high { border-left-color: #dc3545; }
-        .priority-critical { border-left-color: #dc3545; background: #f8d7da; }
+        .priority-high {
+            border-left-color: #dc3545;
+        }
+
+        .priority-critical {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
 
         .email-logs-table {
             background: white;
             border-radius: 10px;
             overflow: hidden;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .email-logs-table table {
@@ -414,9 +461,20 @@
             font-weight: bold;
         }
 
-        .status-sent { background: #d4edda; color: #155724; }
-        .status-failed { background: #f8d7da; color: #721c24; }
-        .status-pending { background: #fff3cd; color: #856404; }
+        .status-sent {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-failed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
 
         /* Real-time indicators */
         .realtime-indicator {
@@ -430,10 +488,23 @@
         }
 
         @keyframes pulse {
-            0% { opacity: 1; }
-            0% { transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.1); }
-            100% { opacity: 1; transform: scale(1); }
+            0% {
+                opacity: 1;
+            }
+
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.5;
+                transform: scale(1.1);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
         }
 
         /* Role badges */
@@ -448,6 +519,87 @@
         .role-admin {
             background: #dc3545;
             color: white;
+        }
+
+        /* Mobile-friendly dashboard adjustments */
+        @media (max-width: 1024px) {
+            body.dashboard-body {
+                overflow-x: hidden;
+            }
+
+            #dashboard-sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                width: 260px;
+                transform: translateX(-100%);
+                transition: transform 0.25s ease;
+                z-index: 1000;
+            }
+
+            #dashboard-sidebar.open {
+                transform: translateX(0);
+            }
+
+            #dashboard-content {
+                margin-left: 0;
+                padding-top: 70px;
+            }
+
+            .dashboard-topbar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                z-index: 1050;
+            }
+
+            .dashboard-main {
+                padding: 20px 12px 40px;
+            }
+
+            .admin-tabs {
+                flex-wrap: wrap;
+            }
+
+            .admin-section {
+                padding: 0;
+            }
+
+            .overview-card,
+            .application-card,
+            .notificationsList,
+            .email-logs-table,
+            .user-activity-table {
+                margin-bottom: 15px;
+                box-shadow: none;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .admin-tab-button,
+            .sidebar-nav li a {
+                font-size: 12px;
+                padding: 10px;
+            }
+
+            .dashboard-topbar h2 {
+                font-size: 16px;
+            }
+
+            .user-menu {
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+
+            #dashboard-sidebar {
+                width: 100%;
+            }
+
+            .dashboard-main {
+                padding: 12px 8px 30px;
+            }
         }
 
         .role-affiliate {
@@ -471,14 +623,20 @@
         </div>
         <ul class="sidebar-nav">
             <li><a href="dashboard-products.html"><i class="fa fa-th-large"></i> User Dashboard</a></li>
-            <li><a href="#" onclick="showSection('analytics')" id="link-analytics"><i class="fa fa-bar-chart"></i>
-                    Analytics</a></li>
-            <li><a href="#" onclick="showSection('pending')" id="link-pending" class="active"><i
-                        class="fa fa-clock-o"></i> Pending Approvals</a></li>
-            <li><a href="#" onclick="showSection('payments')" id="link-payments"><i class="fa fa-paypal"></i>
+            <li><a href="#" onclick="showAdminTab('overview')" id="link-overview" class="active"><i
+                        class="fa fa-bar-chart"></i>
+                    System Overview</a></li>
+            <li><a href="#" onclick="showAdminTab('applications')" id="link-applications"><i class="fa fa-clock-o"></i>
+                    Ad Applications</a></li>
+            <li><a href="#" onclick="showAdminTab('ads')" id="link-ads"><i class="fa fa-bullhorn"></i> Advertisements</a></li>
+            <li><a href="#" onclick="showAdminTab('pending-products')" id="link-pending-products"><i
+                        class="fa fa-shopping-bag"></i> Pending Products</a></li>
+            <li><a href="#" onclick="showAdminTab('payments')" id="link-payments"><i class="fa fa-paypal"></i>
                     Payments</a></li>
-            <li><a href="#" onclick="showSection('users')" id="link-users"><i class="fa fa-users"></i> Users</a></li>
-            <li><a href="#" onclick="showSection('system')" id="link-system"><i class="fa fa-cog"></i> System
+            <li><a href="#" onclick="showAdminTab('users')" id="link-users"><i class="fa fa-users"></i> Users</a></li>
+            <li><a href="#" onclick="showAdminTab('emails')" id="link-emails"><i class="fa fa-envelope"></i> Email
+                    Logs</a></li>
+            <li><a href="#" onclick="showAdminTab('system')" id="link-system"><i class="fa fa-cog"></i> System
                     Management</a></li>
         </ul>
     </aside>
@@ -487,7 +645,8 @@
     <div id="dashboard-content">
         <!-- Topbar -->
         <header class="dashboard-topbar">
-            <h2>Admin Dashboard</h2>
+            <button id="sidebarToggle" style="background:#007bff;color:#fff;border:none;padding:8px 12px;margin-right:12px;border-radius:4px;display:none;" onclick="document.getElementById('dashboard-sidebar').classList.toggle('open')">☰</button>
+        <h2>Admin Dashboard</h2>
             <div class="user-menu">
                 <span id="admin-name">Admin</span>
                 <div class="user-avatar"></div>
@@ -501,13 +660,16 @@
             <!-- Admin Navigation Tabs -->
             <div class="admin-tabs">
                 <button class="admin-tab-button active" onclick="showAdminTab('overview')">System Overview</button>
-                <button class="admin-tab-button" onclick="showAdminTab('applications')">Advertising Applications</button>
+                <button class="admin-tab-button" onclick="showAdminTab('applications')">Advertising
+                    Applications</button>
+                <button class="admin-tab-button" onclick="showAdminTab('pending-products')">Pending Products</button>
                 <button class="admin-tab-button" onclick="showAdminTab('users')">User Management</button>
                 <button class="admin-tab-button" onclick="showAdminTab('activities')">User Activities</button>
                 <button class="admin-tab-button" onclick="showAdminTab('notifications')">Notifications</button>
                 <button class="admin-tab-button" onclick="showAdminTab('emails')">Email Logs</button>
                 <button class="admin-tab-button" onclick="showAdminTab('ads')">Ad Management</button>
-                <button class="admin-tab-button" onclick="showAdminTab('payments')">Payment Services</button>
+                <button class="admin-tab-button" onclick="showAdminTab('payments')">Payment Facilitation</button>
+                <button class="admin-tab-button" onclick="showAdminTab('system')">System Config</button>
             </div>
 
             <!-- System Overview Section -->
@@ -602,11 +764,50 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Advertising Applications Section -->
+            <!-- Advertising Management Section -->
             <div id="applications" class="admin-section">
-                <div class="applications-list" id="applicationsList">
-                    <!-- Applications will be loaded here -->
+                <div class="admin-tabs"
+                    style="margin-top: 0; background: #f1f3f5; border-radius: 8px 8px 0 0; padding: 0 10px;">
+                    <button class="admin-tab-button active" onclick="showAdSubTab('pending-apps')"
+                        id="btn-pending-apps">Pending Applications</button>
+                    <button class="admin-tab-button" onclick="showAdSubTab('invite-users')" id="btn-invite-users">Invite
+                        Users</button>
+                </div>
+
+                <div id="pending-apps" class="ad-sub-section active" style="margin-top: 20px;">
+                    <div class="overview-card"
+                        style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                        <h3>Advertising Applications</h3>
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn-success" onclick="showAdminTab('ads')">
+                                <i class="fa fa-bullhorn"></i> Manage Ads
+                            </button>
+                            <button class="btn-reject" id="btnRejectAll" onclick="rejectAllApplications()"
+                                style="display: none;">
+                                <i class="fa fa-trash"></i> Decline All Pending
+                            </button>
+                        </div>
+                    </div>
+                    <div class="applications-list" id="applicationsList">
+                        <!-- Applications will be loaded here -->
+                    </div>
+                </div>
+
+                <div id="invite-users" class="ad-sub-section" style="display: none; margin-top: 20px;">
+                    <div class="overview-card">
+                        <h3>Invite Users to Advertise</h3>
+                        <p>Search for active users and invite them to become advertisers.</p>
+
+                        <div style="margin: 20px 0; display: flex; gap: 10px;">
+                            <input type="text" id="userSearchInput" placeholder="Search by name or email..."
+                                style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                            <button class="btn-approve" onclick="searchUsersToInvite()">Search</button>
+                        </div>
+
+                        <div id="inviteUsersList" style="margin-top: 20px;">
+                            <!-- Search results will appear here -->
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -689,124 +890,43 @@
                     </div>
                 </div>
             </div>
-            <!-- Analytics Section -->
-            <div id="section-analytics" class="admin-section" style="display: none;">
-                <h1 class="page-title">System Analytics</h1>
-
-                <!-- Real-time System Health -->
-                <div class="health-overview" style="margin-bottom: 30px;">
-                    <h3 style="color: #333; margin-bottom: 15px;">System Health <span id="health-status" style="float: right; padding: 5px 10px; border-radius: 4px; font-size: 12px;"></span></h3>
-                    <div class="health-metrics" id="health-metrics">
-                        <!-- Health metrics loaded here -->
+            <!-- Pending Products Section -->
+            <div id="pending-products" class="admin-section">
+                <div class="overview-card">
+                    <h3><i class="fa fa-shopping-bag"></i> Pending Product Approvals</h3>
+                    <p>Review and approve products uploaded by affiliates.</p>
+                    <div id="pendingProductsList" class="card-grid">
+                        <p>Loading pending products...</p>
                     </div>
-                </div>
-
-                <!-- Main Stats Grid -->
-                <div class="stats-grid" id="stats-container">
-                    <!-- Stats loaded here -->
-                </div>
-
-                <!-- Performance Charts -->
-                <div class="charts-section" style="margin-top: 30px;">
-                    <div class="chart-container">
-                        <h3>Revenue Trend (Last 7 Days)</h3>
-                        <canvas id="revenueChart" width="400" height="200"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <h3>User Growth (Last 30 Days)</h3>
-                        <canvas id="userGrowthChart" width="400" height="200"></canvas>
-                    </div>
-                </div>
-
-                <!-- System Performance Details -->
-                <div class="performance-details" style="margin-top: 30px;">
-                    <h3>System Performance</h3>
-                    <div class="performance-grid" id="performance-details">
-                        <!-- Detailed performance metrics -->
-                    </div>
-                </div>
-
-                <h2 style="margin-top: 30px;">Recent Activity</h2>
-                <div class="activity-log" id="activity-log">
-                    <p>Loading activity logs...</p>
-                </div>
-
-                <!-- System Alerts -->
-                <div id="system-alerts" style="margin-top: 30px;">
-                    <h3>System Alerts</h3>
-                    <div id="alerts-container"></div>
                 </div>
             </div>
 
-            <!-- Pending Section -->
-            <div id="section-pending" class="admin-section">
-                <h1 class="page-title">Pending Products</h1>
-                <p class="page-subtitle">Review and approve products uploaded by affiliates.</p>
-                <div id="pending-list" class="card-grid" style="display: block;">
-                    <p>Loading pending products...</p>
-                </div>
-            </div>
+            <!-- System Management Section -->
+            <div id="system" class="admin-section">
+                <div class="overview-card">
+                    <h3><i class="fa fa-cog"></i> System Management</h3>
+                    <p>Execute system configurations and upload necessary features.</p>
 
-            <!-- Payments Section -->
-            <div id="section-payments" class="admin-section" style="display: none;">
-                <h1 class="page-title">Payment History</h1>
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Order ID</th>
-                                <th>User</th>
-                                <th>Product</th>
-                                <th>Amount</th>
-                                <th>Date</th>
-                            </tr>
-                        </thead>
-                        <tbody id="payment-list"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Users Section -->
-            <div id="section-users" class="admin-section" style="display: none;">
-                <h1 class="page-title">Registered Users</h1>
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Username</th>
-                                <th>Email</th>
-                                <th>Role</th>
-                                <th>Joined</th>
-                            </tr>
-                        </thead>
-                        <tbody id="user-list"></tbody>
-                    </table>
-                </div>
-                <!-- System Management Section -->
-                <div id="section-system" class="admin-section" style="display: none;">
-                    <h1 class="page-title">System Management</h1>
-                    <p class="page-subtitle">Execute system configurations and upload necessary features.</p>
-
-                    <div class="dash-card" style="margin-bottom: 30px;">
-                        <h3><i class="fa fa-code"></i> JSON Configuration Executor</h3>
+                    <div class="dash-card"
+                        style="margin-bottom: 30px; background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                        <h4><i class="fa fa-code"></i> JSON Configuration Executor</h4>
                         <p>Execute system updates or configuration changes via JSON input.</p>
                         <textarea id="json-input" class="form-control" rows="8"
                             placeholder='{ "action": "update_config", "params": { ... } }'
-                            style="width: 100%; font-family: monospace;"></textarea>
-                        <button onclick="executeJson()" class="btn-primary" style="margin-top: 10px;">Execute
-                            JSON</button>
+                            style="width: 100%; font-family: monospace; padding: 10px; margin-bottom: 10px;"></textarea>
+                        <button onclick="executeJson()" class="btn-approve">Execute JSON</button>
                         <div id="json-result" style="margin-top: 10px; font-size: 13px;"></div>
                     </div>
 
-                    <div class="dash-card">
-                        <h3><i class="fa fa-upload"></i> Feature Upload</h3>
+                    <div class="dash-card" style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                        <h4><i class="fa fa-upload"></i> Feature Upload</h4>
                         <p>Upload new system features or assets (ZIP/HTML/JS).</p>
                         <input type="file" id="feature-upload" class="form-control" style="margin-bottom: 10px;">
-                        <button onclick="uploadFeature()" class="btn-dash">Upload & Install</button>
+                        <button onclick="uploadFeature()" class="btn-approve">Upload & Install</button>
                         <div id="upload-status" style="margin-top: 10px; font-size: 13px;"></div>
                     </div>
                 </div>
+            </div>
         </main>
     </div>
 
@@ -816,18 +936,37 @@
         let realtimeInterval;
 
         // Tab switching functionality
-        function showAdminTab(tabName) {
+        function showAdminTab(tabName, event) {
             // Hide all sections
             document.querySelectorAll('.admin-section').forEach(section => {
                 section.classList.remove('active');
+                section.style.display = 'none';
             });
-            document.querySelectorAll('.admin-tab-button').forEach(btn => {
-                btn.classList.remove('active');
+
+            // Remove active class from all buttons and links
+            document.querySelectorAll('.admin-tab-button, .sidebar-nav li a').forEach(el => {
+                el.classList.remove('active');
             });
 
             // Show selected section
-            document.getElementById(tabName).classList.add('active');
-            event.target.classList.add('active');
+            const targetSection = document.getElementById(tabName);
+            if (targetSection) {
+                targetSection.classList.add('active');
+                targetSection.style.display = 'block';
+            }
+
+            // Add active class to the correct tab button if it exists
+            const tabButtons = document.querySelectorAll('.admin-tab-button');
+            tabButtons.forEach(btn => {
+                if (btn.getAttribute('onclick')?.includes(`'${tabName}'`)) {
+                    btn.classList.add('active');
+                }
+            });
+
+            // Add active class to sidebar link
+            const sidebarBtn = document.getElementById(`link-${tabName}`);
+            if (sidebarBtn) sidebarBtn.classList.add('active');
+
             currentAdminTab = tabName;
 
             // Load tab-specific data
@@ -837,12 +976,15 @@
         // Load data for specific tab
         async function loadTabData(tabName) {
             try {
-                switch(tabName) {
+                switch (tabName) {
                     case 'overview':
                         await loadSystemOverview();
                         break;
                     case 'applications':
                         await loadApplications();
+                        break;
+                    case 'pending-products':
+                        await loadPendingProducts();
                         break;
                     case 'users':
                         await loadUsers();
@@ -897,7 +1039,6 @@
             }
         }
 
-        // Load advertising applications
         async function loadApplications() {
             const applicationsList = document.getElementById('applicationsList');
             applicationsList.innerHTML = '<div style="text-align: center; padding: 40px;"><i class="fa fa-spinner fa-spin" style="font-size: 24px;"></i><br>Loading applications...</div>';
@@ -907,6 +1048,9 @@
                 const data = await response.json();
 
                 if (data.success) {
+                    const btnRejectAll = document.getElementById('btnRejectAll');
+                    if (btnRejectAll) btnRejectAll.style.display = data.applications.length > 0 ? 'block' : 'none';
+
                     let html = '';
                     if (data.applications.length === 0) {
                         html = '<div class="overview-card" style="text-align: center;"><p>No pending applications</p></div>';
@@ -947,6 +1091,63 @@
             } catch (error) {
                 console.error('Error loading applications:', error);
                 applicationsList.innerHTML = '<div class="overview-card" style="text-align: center; color: #dc3545;"><i class="fa fa-exclamation-triangle"></i> Failed to load applications</div>';
+            }
+        }
+
+        // Load pending products
+        async function loadPendingProducts() {
+            const productsList = document.getElementById('pendingProductsList');
+            productsList.innerHTML = '<div style="text-align: center; padding: 40px;"><i class="fa fa-spinner fa-spin" style="font-size: 24px;"></i><br>Loading pending products...</div>';
+
+            try {
+                const response = await fetch('/api/admin/pending-products');
+                const products = await response.json();
+
+                if (Array.isArray(products)) {
+                    let html = '';
+                    if (products.length === 0) {
+                        html = '<p style="text-align: center; padding: 20px;">No pending products to review.</p>';
+                    } else {
+                        products.forEach(p => {
+                            html += `
+                                <div class="product-card">
+                                    <div class="product-title">${p.title}</div>
+                                    <div class="product-price">$${p.price}</div>
+                                    <p>${p.description}</p>
+                                    <div style="margin-top: 10px;">
+                                        <button onclick="updateProduct(${p.id}, 'approve')" class="btn-approve" style="margin-right: 5px;">Approve</button>
+                                        <button onclick="updateProduct(${p.id}, 'reject')" class="btn-reject">Reject</button>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    }
+                    productsList.innerHTML = html;
+                }
+            } catch (error) {
+                console.error('Error loading pending products:', error);
+                productsList.innerHTML = '<div style="text-align: center; color: #dc3545;">Failed to load pending products</div>';
+            }
+        }
+
+        // Update product status (approve/reject)
+        async function updateProduct(productId, action) {
+            try {
+                const response = await fetch('/api/admin/approve-product', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ productId, action })
+                });
+
+                const result = await response.json();
+                if (result.message) {
+                    showNotification(result.message, 'success');
+                    loadPendingProducts();
+                    loadSystemOverview();
+                }
+            } catch (error) {
+                console.error('Error updating product:', error);
+                showNotification('Failed to update product', 'error');
             }
         }
 
@@ -998,6 +1199,42 @@
             } catch (error) {
                 console.error('Error rejecting application:', error);
                 showNotification('Network error. Please try again.', 'error');
+            }
+        }
+
+        // Bulk reject all pending applications
+        async function rejectAllApplications() {
+            const reason = prompt('Reason for bulk rejection:');
+            if (!reason) return;
+
+            if (!confirm('Are you sure you want to REJECT ALL pending applications?')) return;
+
+            const btn = document.getElementById('btnRejectAll');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Processing...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/api/admin/reject-all-pending-applications', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    showNotification(result.message, 'success');
+                    loadApplications();
+                    loadSystemOverview();
+                } else {
+                    showNotification(result.message || 'Failed to bulk reject', 'error');
+                }
+            } catch (error) {
+                console.error('Error bulk rejecting:', error);
+                showNotification('Network error', 'error');
+            } finally {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
             }
         }
 
@@ -1381,7 +1618,7 @@
         }
 
         // Initialize dashboard
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             loadSystemOverview();
 
             // Set up real-time updates every 30 seconds
@@ -1393,10 +1630,115 @@
                 }
             }, 30000);
         });
+        // Ad Sub-tab management
+        function showAdSubTab(subTabId) {
+            document.querySelectorAll('.ad-sub-section').forEach(sec => sec.style.display = 'none');
+            document.getElementById(subTabId).style.display = 'block';
+
+            document.querySelectorAll('#applications .admin-tab-button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('btn-' + subTabId).classList.add('active');
+
+            if (subTabId === 'pending-apps') loadApplications();
+        }
+
+        async function searchUsersToInvite() {
+            const query = document.getElementById('userSearchInput').value;
+            if (!query) return;
+
+            const list = document.getElementById('inviteUsersList');
+            list.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Searching...';
+
+            try {
+                const response = await fetch(`/api/admin/users-detailed?query=${encodeURIComponent(query)}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    let html = '<table style="width: 100%; border-collapse: collapse;">';
+                    html += '<thead style="background: #f8f9fa;"><tr><th style="padding: 10px; text-align: left;">Name</th><th style="padding: 10px; text-align: left;">Email</th><th style="padding: 10px; text-align: left;">Ad Status</th><th style="padding: 10px; text-align: center;">Action</th></tr></thead><tbody>';
+
+                    data.users.forEach(user => {
+                        html += `
+                            <tr style="border-bottom: 1px solid #eee;">
+                                <td style="padding: 10px;">${user.name}</td>
+                                <td style="padding: 10px;">${user.email}</td>
+                                <td style="padding: 10px;">${user.advertising_status || 'inactive'}</td>
+                                <td style="padding: 10px; text-align: center;">
+                                    <button class="btn-approve" onclick="inviteUser('${user.id}', '${user.email}')" ${user.advertising_status === 'active' || user.advertising_status === 'invited' ? 'disabled' : ''}>
+                                        Invite
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    html += '</tbody></table>';
+                    list.innerHTML = html;
+                }
+            } catch (e) {
+                list.innerHTML = 'Error searching users';
+            }
+        }
+
+        async function inviteUser(userId, email) {
+            if (!confirm(`Invite ${email} to advertise?`)) return;
+
+            try {
+                const response = await fetch('/api/admin/invite-advertiser', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId, email })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    showNotification('Invitation sent!', 'success');
+                    searchUsersToInvite(); // refresh search list
+                } else {
+                    showNotification(result.message || 'Failed to invite', 'error');
+                }
+            } catch (e) {
+                showNotification('Network error', 'error');
+            }
+        }
+
+        function viewUserDetails(userId) {
+            showNotification(`User ID: ${userId} — detailed view coming soon.`, 'info');
+        }
+
+        async function resetUserPassword(userId, email) {
+            if (!confirm(`Send password reset email to ${email}?`)) return;
+            try {
+                const response = await fetch('/api/auth/forgot-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const result = await response.json();
+                showNotification(result.message || 'Reset email sent.', result.success !== false ? 'success' : 'error');
+            } catch (e) {
+                showNotification('Network error while sending reset email.', 'error');
+            }
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = '/login.html';
+        }
+
+        function editAd(adId) {
+            showNotification(`Edit Ad ID: ${adId} — panel coming soon.`, 'info');
+        }
+
+        function toggleAd(adId, isActive) {
+            // delegated to admin-dashboard.js toggleAdStatus
+            if (typeof toggleAdStatus === 'function') {
+                toggleAdStatus(adId, !isActive);
+            }
+        }
     </script>
     <script src="js/utils.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/admin-dashboard.js"></script>
+    <script src="js/searchHandler.js"></script>
 </body>
 
 </html>

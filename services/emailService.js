@@ -1,11 +1,63 @@
 // Email Service for sending notifications
-// This is a mock implementation - in production, integrate with SendGrid, Mailgun, etc.
-
 const { db } = require('../dbConfig');
+const nodemailer = require('nodemailer');
+const logger = require('../utils/logger');
 
 class EmailService {
     constructor() {
+        // Initialize Nodemailer transporter
+        this.transporter = nodemailer.createTransport({
+            host: process.env.SMTP_HOST || 'smtp.gmail.com',
+            port: parseInt(process.env.SMTP_PORT || '587'),
+            secure: process.env.SMTP_PORT === '465', // true for 465, false for other ports
+            auth: {
+                user: process.env.SMTP_USER,
+                pass: process.env.SMTP_PASS
+            }
+        });
+
         this.templates = {
+            password_reset: {
+                subject: '🔒 Reset Your Aceos Password',
+                html: (data) => `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 10px; overflow: hidden;">
+                        <div style="background: #ff5e14; padding: 20px; text-align: center;">
+                            <img src="https://fcwaavtmpqibiccdijwy.supabase.co/storage/v1/object/public/system/logo.png" alt="Aceos" style="max-width: 150px;">
+                        </div>
+                        <div style="padding: 30px; color: #333;">
+                            <h2 style="color: #ff5e14; margin-top: 0;">Password Reset Request</h2>
+                            <p>Hello,</p>
+                            <p>We received a request to reset the password for your Aceos account. Use the following 6-digit verification code to proceed:</p>
+                            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center; margin: 25px 0;">
+                                <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #333;">${data.code}</span>
+                            </div>
+                            <p>This code will expire in <strong>15 minutes</strong> for your security.</p>
+                            <p>If you didn't request a password reset, you can safely ignore this email. Your password will remain unchanged.</p>
+                            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                            <p style="font-size: 14px; color: #777;">Regards,<br>The Aceos Team</p>
+                        </div>
+                        <div style="background: #f1f1f1; padding: 15px; text-align: center; font-size: 12px; color: #999;">
+                            &copy; ${new Date().getFullYear()} Aceos Affiliate Store. All rights reserved.
+                        </div>
+                    </div>
+                `,
+                text: (data) => `
+                    Reset Your Aceos Password
+
+                    Hello,
+
+                    We received a request to reset the password for your Aceos account. Use the following 6-digit verification code to proceed:
+
+                    ${data.code}
+
+                    This code will expire in 15 minutes for your security.
+
+                    If you didn't request a password reset, you can safely ignore this email. Your password will remain unchanged.
+
+                    Regards,
+                    The Aceos Team
+                `
+            },
             application_approved: {
                 subject: '🎉 Your Advertising Application Has Been Approved!',
                 html: (data) => `
@@ -164,6 +216,7 @@ class EmailService {
         };
     }
 
+
     // Send an email
     async sendEmail(recipientEmail, recipientName, templateKey, templateData = {}) {
         try {
@@ -172,61 +225,67 @@ class EmailService {
                 throw new Error(`Email template '${templateKey}' not found`);
             }
 
-            const emailData = {
-                recipient_email: recipientEmail,
-                recipient_name: recipientName,
+            const html = template.html(templateData);
+            const text = template.text ? template.text(templateData) : html.replace(/<[^>]*>?/gm, '');
+
+            const mailOptions = {
+                from: process.env.SMTP_FROM || '"Aceos Team" <info@aceos.com>',
+                to: recipientEmail,
                 subject: template.subject,
-                message: template.html(templateData),
-                email_type: templateKey,
-                status: 'sent',
-                sent_at: new Date()
+                text: text,
+                html: html
             };
 
-            // Store email in database
+            // Send actual email via Nodemailer
+            let info = await this.transporter.sendMail(mailOptions);
+            logger.info(`Email sent successfully to ${recipientEmail}`, { messageId: info.messageId, templateKey });
+
+            // Store email in database for logging
             const { error: insertError } = await db
-                .from('email_logs')
-                .insert([
-                    {
-                        recipient_email: emailData.recipient_email,
-                        recipient_name: emailData.recipient_name,
-                        subject: emailData.subject,
-                        message: emailData.message,
-                        email_type: emailData.email_type,
-                        status: emailData.status,
-                        sent_at: emailData.sent_at
-                    }
-                ]);
-
-            if (insertError) throw insertError;
-
-            // Log to console (in production, this would send actual email)
-            console.log(`📧 Email sent to ${recipientEmail}: ${template.subject}`);
-            console.log(`Template: ${templateKey}`);
-            console.log(`Data:`, templateData);
-
-            return { success: true, emailId: null };
-
-        } catch (error) {
-            console.error('Error sending email:', error);
-
-            // Log failed email
-            await db
                 .from('email_logs')
                 .insert([
                     {
                         recipient_email: recipientEmail,
                         recipient_name: recipientName,
-                        subject: templateKey,
-                        message: 'Failed to send email',
+                        subject: template.subject,
                         email_type: templateKey,
-                        status: 'failed',
-                        error_message: error.message,
+                        status: 'sent',
                         sent_at: new Date()
                     }
                 ]);
 
+            if (insertError) logger.error('Error logging email to DB', { error: insertError.message, recipientEmail });
+
+            return { success: true, messageId: info.messageId };
+
+        } catch (error) {
+            logger.error('Error sending email', { error: error.message, recipientEmail, templateKey });
+
+            // Log failed email
+            try {
+                await db
+                    .from('email_logs')
+                    .insert([
+                        {
+                            recipient_email: recipientEmail,
+                            recipient_name: recipientName,
+                            subject: templateKey,
+                            email_type: templateKey,
+                            status: 'failed',
+                            sent_at: new Date()
+                        }
+                    ]);
+            } catch (dbError) {
+                logger.error('Failed to log email error to DB', { error: dbError.message, recipientEmail });
+            }
+
             return { success: false, error: error.message };
         }
+    }
+
+    // Send password reset code
+    async sendPasswordResetCode(email, code) {
+        return this.sendEmail(email, 'User', 'password_reset', { code });
     }
 
     // Send application approval email

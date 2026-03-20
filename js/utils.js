@@ -63,7 +63,6 @@ async function safeFetch(url, options = {}) {
 
     const defaultHeaders = {
         'Content-Type': 'application/json',
-        // Only add Authorization header if a token exists
         ...(token && { 'Authorization': `Bearer ${token}` })
     };
 
@@ -77,26 +76,29 @@ async function safeFetch(url, options = {}) {
 
     try {
         const response = await fetch(url, config);
-
-        // Handle unauthorized globally
-        if (response.status === 401) {
-            console.warn('Unauthorized access. Redirecting to login...');
-            logout();
-            return null;
-        }
-
         const data = await response.json();
+
         if (!response.ok) {
-            throw new Error(data.error || `Fetch failed with status ${response.status}`);
+            const errorMsg = data.error || data.message || `Request failed (${response.status})`;
+            // Only auto-logout on 401 if this is NOT a login/register request
+            if (response.status === 401 && !url.includes('/auth/login') && !url.includes('/auth/register')) {
+                console.warn('Session expired. Redirecting to login...');
+                logout();
+                return null;
+            }
+            throw new Error(errorMsg);
         }
+
         return data;
     } catch (err) {
-        console.error(`API Fetch Error (${url}):`, err.message);
-        // "Failed to fetch" usually means the server is down or CORS issue
-        if (err.message === 'Failed to fetch') {
-            alert('Cannot connect to the server. Please ensure the backend is running on port 3000.');
-        } else {
-            alert(err.message);
+        console.error(`API Error (${url}):`, err.message);
+        // Show in-page notification instead of a blocking alert
+        if (typeof showNotification === 'function') {
+            if (err.message === 'Failed to fetch') {
+                showNotification('Cannot connect to the server. Please ensure the backend is running.', 'error');
+            } else {
+                showNotification(err.message, 'error');
+            }
         }
         throw err;
     }

@@ -2,13 +2,14 @@ const LocalStrategy = require("passport-local").Strategy;
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const { db } = require("./dbConfig");
 const bcrypt = require("bcrypt");
+const logger = require("./utils/logger");
 
 function initialize(passport) {
   console.log("Initialized");
 
   const authenticateUser = async (email, password, done) => {
     try {
-      console.log(email, password);
+      logger.debug('Authentication attempt', { email });
       const { data: users, error } = await db
         .from("users")
         .select("*")
@@ -22,7 +23,7 @@ function initialize(passport) {
 
         bcrypt.compare(password, user.password, (err, isMatch) => {
           if (err) {
-            console.log(err);
+            logger.error('Bcrypt comparison error', { error: err.message, email });
             return done(err);
           }
           if (isMatch) {
@@ -108,7 +109,6 @@ function initialize(passport) {
       if (error) throw error;
 
       if (users.length > 0) {
-        console.log(`ID is ${users[0].id}`);
         return done(null, users[0]);
       } else {
         return done(new Error("User not found"));
