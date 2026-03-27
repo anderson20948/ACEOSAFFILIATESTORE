@@ -119,32 +119,7 @@ function logAction(req, res, next) {
   }
 }
 
-// Password Validation Function
-function validatePassword(password) {
-  const errors = [];
-
-  if (password.length < 8) {
-    errors.push("Password must be at least 8 characters long");
-  }
-
-  if (!/[A-Z]/.test(password)) {
-    errors.push("Password must contain at least one uppercase letter");
-  }
-
-  if (!/[a-z]/.test(password)) {
-    errors.push("Password must contain at least one lowercase letter");
-  }
-
-  if (!/\d/.test(password)) {
-    errors.push("Password must contain at least one number");
-  }
-
-  if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-    errors.push("Password must contain at least one special character");
-  }
-
-  return errors;
-}
+// Password Validation Function (Moved to routes/auth.js)
 
 // Super Admin Middleware
 function checkSuperAdmin(req, res, next) {
@@ -455,97 +430,6 @@ app.get("/users/logout", (req, res, next) => {
     req.flash("success_msg", "You have logged out successfully");
     res.redirect("/users/login");
   });
-});
-
-app.post("/users/register", async (req, res) => {
-  let { name, email, password, password2 } = req.body;
-
-  let errors = [];
-
-  console.log({
-    name,
-    email,
-    password,
-    password2
-  });
-
-  if (!name || !email || !password || !password2) {
-    errors.push({ message: "Please enter all fields" });
-  }
-
-  if (password !== password2) {
-    errors.push({ message: "Passwords do not match" });
-  }
-
-  // Enhanced password validation
-  const passwordErrors = validatePassword(password);
-  passwordErrors.forEach(error => errors.push({ message: error }));
-
-  if (errors.length > 0) {
-    res.render("register", { errors, name, email, password, password2 });
-  } else {
-    hashedPassword = await bcrypt.hash(password, 10);
-    console.log(hashedPassword);
-    // Validation passed
-    try {
-      const { data: results, error: checkError } = await db
-        .from("users")
-        .select("*")
-        .eq("email", email);
-
-      if (checkError) throw checkError;
-
-      if (results.length > 0) {
-        return res.render("register", {
-          message: "Email already registered"
-        });
-      } else {
-        const { data: newUserResults, error: insertError } = await db
-          .from("users")
-          .insert([
-            { name, email, password: hashedPassword, role: "affiliate" }
-          ])
-          .select("id, password");
-
-        if (insertError) {
-          console.error("Registration insertion error:", insertError);
-          return res.render("register", { message: "An error occurred during registration. Please try again." });
-        }
-
-        const newUser = newUserResults[0];
-        console.log("New user registered:", newUser.id);
-
-        // Auto-login after registration
-        req.logIn(newUser, (err) => {
-          if (err) {
-            console.error("Auto-login error:", err);
-            req.flash("success_msg", "Registration successful! Please log in.");
-            return res.redirect("/users/login");
-          }
-          req.flash("success_msg", "Registration successful! Welcome to your dashboard.");
-          res.redirect("/dashboard");
-        });
-      }
-    } catch (err) {
-      console.error(err);
-      res.render("register", { message: "An error occurred during registration." });
-    }
-  }
-});
-
-app.post("/users/login", (req, res, next) => {
-  passport.authenticate("local", (err, user, info) => {
-    if (err) { return next(err); }
-    if (!user) {
-      req.flash("error", info ? info.message : "Login failed");
-      return res.redirect("/users/login");
-    }
-    req.logIn(user, (err) => {
-      if (err) { return next(err); }
-      // Redirect to central dashboard route for role-based logic
-      return res.redirect("/dashboard");
-    });
-  })(req, res, next);
 });
 
 // Google OAuth Routes

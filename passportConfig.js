@@ -30,13 +30,13 @@ function initialize(passport) {
             return done(null, user);
           } else {
             //password is incorrect
-            return done(null, false, { message: "Invalid choice" });
+            return done(null, false, { message: "Invalid email or password" });
           }
         });
       } else {
         // No user
         return done(null, false, {
-          message: "Invalid choice"
+          message: "Invalid email or password"
         });
       }
     } catch (err) {

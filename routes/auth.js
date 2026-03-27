@@ -21,6 +21,14 @@ router.post('/register', async (req, res) => {
         return res.status(400).json({ error: 'Please provide name, email, and password' });
     }
 
+    // Server-side password validation
+    if (password.length < 8) {
+        return res.status(400).json({ error: 'Password must be at least 8 characters long' });
+    }
+    if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/\d/.test(password)) {
+        return res.status(400).json({ error: 'Password must contain uppercase, lowercase, and numbers' });
+    }
+
     try {
         // Check if user exists
         const { data: userCheck, error: checkError } = await db
@@ -43,20 +51,32 @@ router.post('/register', async (req, res) => {
             .insert([
                 { name: username, email, password: hashedPassword, role: "affiliate" }
             ])
-            .select('id, name, email, role');
+            .select('*');
 
         if (insertError) throw insertError;
         const newUser = insertResults[0];
 
-        // Generate JWT
+        // 1. Initialize Passport Session (if available)
+        if (req.logIn) {
+            req.logIn(newUser, (err) => {
+                if (err) logger.error('Passport logIn error during registration:', err);
+            });
+        }
+
+        // 2. Generate JWT
         const token = jwt.sign(
             { id: newUser.id, email: newUser.email, role: newUser.role, name: newUser.name },
             JWT_SECRET,
             { expiresIn: '24h' }
         );
 
-        // Set cookie
-        res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', maxAge: 24 * 60 * 60 * 1000 });
+        // 3. Set cookie
+        res.cookie('token', token, { 
+            httpOnly: true, 
+            secure: process.env.NODE_ENV === 'production', 
+            sameSite: 'lax',
+            maxAge: 24 * 60 * 60 * 1000 
+        });
 
         // Log activity
         await db.from('activities').insert([
@@ -89,13 +109,12 @@ router.post('/login', async (req, res) => {
     }
 
     try {
-        // Create a query timeout so slow DB connections don't hang requests
+        // Create a query timeout
         const queryTimeout = new Promise((_, reject) =>
             setTimeout(() => reject(new Error('Database query timed out')), 10000)
         );
 
         const dbQuery = db.from('users').select('*').eq('email', email);
-
         const { data: users, error: fetchError } = await Promise.race([dbQuery, queryTimeout]);
 
         if (fetchError) throw fetchError;
@@ -113,14 +132,21 @@ router.post('/login', async (req, res) => {
 
         const userRole = user.role || 'affiliate';
 
-        // Generate JWT
+        // 1. Initialize Passport Session (if available)
+        if (req.logIn) {
+            req.logIn(user, (err) => {
+                if (err) logger.error('Passport logIn error:', err);
+            });
+        }
+
+        // 2. Generate JWT
         const token = jwt.sign(
             { id: user.id, email: user.email, role: userRole, name: user.name },
             JWT_SECRET,
             { expiresIn: '24h' }
         );
 
-        // Set cookie
+        // 3. Set cookie
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
