@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const modules = [
-    'dotenv', 'express', 'path', './dbConfig', 'bcrypt', 'passport',
+    'dotenv', 'express', 'path', './dbConfig', 'bcryptjs', 'passport',
     'express-flash', 'express-session', 'cookie-parser', './services/emailService',
     './passportConfig', './routes/products', './routes/admin', './routes/affiliate',
     './routes/advertising', './routes/auth', './routes/paypal', './routes/tracking'
