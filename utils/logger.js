@@ -1,11 +1,3 @@
-const fs = require('fs');
-const path = require('path');
-
-const logDir = path.join(process.cwd(), 'logs');
-if (!fs.existsSync(logDir)) {
-    fs.mkdirSync(logDir);
-}
-
 const formatLog = (level, message, meta = {}) => {
     const timestamp = new Date().toISOString();
     return JSON.stringify({
@@ -24,7 +16,7 @@ const logger = {
     error: (message, meta) => {
         const entry = formatLog('ERROR', message, meta);
         process.stderr.write(entry);
-        fs.appendFileSync(path.join(logDir, 'error.log'), entry);
+        // fs.appendFileSync removed for Vercel compatibility
     },
     warn: (message, meta) => {
         const entry = formatLog('WARN', message, meta);

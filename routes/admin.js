@@ -7,20 +7,12 @@ const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
 
-// Configure multer for feature uploads
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const uploadPath = path.join(__dirname, '../uploads/features');
-        if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
-        cb(null, uploadPath);
-    },
-    filename: (req, file, cb) => {
-        cb(null, Date.now() + '-' + file.originalname);
-    }
+// Configure multer for feature uploads (using Memory Storage for Vercel compatibility)
+const upload = multer({ 
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit for features
 });
-const upload = multer({ storage });
 
 const logger = require('../utils/logger');
 
@@ -312,17 +304,40 @@ router.post('/upload-feature', upload.single('file'), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
 
     try {
+        const file = req.file;
+        const fileName = `${Date.now()}-${file.originalname}`;
+        const filePath = `features/${fileName}`;
+
+        // 1. Upload to Supabase Storage
+        const { data: uploadData, error: uploadError } = await db.storage
+            .from('features')
+            .upload(filePath, file.buffer, {
+                contentType: file.mimetype,
+                upsert: true
+            });
+
+        if (uploadError) {
+            logger.error('Feature Upload Error:', uploadError);
+            throw uploadError;
+        }
+
+        // 2. Get Public URL
+        const { data: { publicUrl } } = db.storage
+            .from('features')
+            .getPublicUrl(filePath);
+
+        // 3. Log the activity
         const { error } = await db
             .from('system_logs')
             .insert([
-                { user_id: req.user.id, activity_type: 'feature_upload', details: `Uploaded feature: ${req.file.filename}` }
+                { user_id: req.user.id, activity_type: 'feature_upload', details: `Uploaded feature: ${fileName}` }
             ]);
 
         if (error) throw error;
-        res.json({ message: 'Feature uploaded and recorded successfully.', file: req.file.path });
+        res.json({ success: true, message: 'Feature uploaded and recorded successfully.', file: publicUrl });
     } catch (err) {
-        logger.error(err);
-        res.status(500).json({ error: 'Error processing feature upload.' });
+        logger.error('Feature upload processing error:', err);
+        res.status(500).json({ error: 'Error processing feature upload. Ensure Supabase storage is configured.' });
     }
 });
 

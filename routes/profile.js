@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
 const { db } = require('../dbConfig');
 const logger = require('../utils/logger');
 const jwt = require('jsonwebtoken');
@@ -21,23 +20,9 @@ const ensureAuthenticated = (req, res, next) => {
     }
 };
 
-// Configure Multer for Profile Pictures
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const uploadPath = path.join(__dirname, '../public/uploads/profiles');
-        if (!fs.existsSync(uploadPath)) {
-            fs.mkdirSync(uploadPath, { recursive: true });
-        }
-        cb(null, uploadPath);
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, 'profile-' + req.user.id + '-' + uniqueSuffix + path.extname(file.originalname));
-    }
-});
-
+// Configure Multer for Profile Pictures (using Memory Storage for Vercel compatibility)
 const upload = multer({ 
-    storage: storage,
+    storage: multer.memoryStorage(),
     limits: { fileSize: 2 * 1024 * 1024 }, // 2MB limit
     fileFilter: (req, file, cb) => {
         const filetypes = /jpeg|jpg|png|gif/;
@@ -57,24 +42,45 @@ router.post('/upload-avatar', ensureAuthenticated, upload.single('avatar'), asyn
     }
 
     try {
-        const profileUrl = `/uploads/profiles/${req.file.filename}`;
+        const file = req.file;
+        const fileExt = path.extname(file.originalname).toLowerCase();
+        const fileName = `profile-${req.user.id}-${Date.now()}${fileExt}`;
+        const filePath = `avatars/${fileName}`;
+
+        // 1. Upload to Supabase Storage
+        const { data: uploadData, error: uploadError } = await db.storage
+            .from('profiles')
+            .upload(filePath, file.buffer, {
+                contentType: file.mimetype,
+                upsert: true
+            });
+
+        if (uploadError) {
+            logger.error('Supabase Storage Upload Error:', uploadError);
+            throw uploadError;
+        }
+
+        // 2. Get Public URL
+        const { data: { publicUrl } } = db.storage
+            .from('profiles')
+            .getPublicUrl(filePath);
         
-        // Update user's profile picture URL in database
-        const { error } = await db
+        // 3. Update user's profile picture URL in database
+        const { error: dbError } = await db
             .from('users')
-            .update({ profile_picture_url: profileUrl })
+            .update({ profile_picture_url: publicUrl })
             .eq('id', req.user.id);
 
-        if (error) throw error;
+        if (dbError) throw dbError;
 
         res.json({ 
             success: true, 
             message: 'Profile picture updated successfully',
-            imageUrl: profileUrl
+            imageUrl: publicUrl
         });
     } catch (err) {
-        logger.error('Error updating profile picture:', err);
-        res.status(500).json({ success: false, message: 'Internal server error' });
+        logger.error('Error updating profile picture:', { error: err.message });
+        res.status(500).json({ success: false, message: 'Internal server error. Please ensure Supabase storage is configured.' });
     }
 });
 
