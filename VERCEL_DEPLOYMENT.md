@@ -15,6 +15,11 @@ You **must** add the following environment variables to your Vercel Project Sett
 | `SMTP_USER` | Your email service username (e.g., Gmail address) |
 | `SMTP_PASS` | Your email service app password |
 | `NODE_ENV` | Set to `production` |
+| `BASE_URL` | The public URL of your Vercel deployment (e.g. `https://your-project.vercel.app`) |
+| `ALLOWED_ORIGINS` | Comma-separated list of allowed CORS origins |
+| `PAYPAL_CLIENT_ID` | Your PayPal Client ID |
+| `PAYPAL_CLIENT_SECRET` | Your PayPal Client Secret |
+| `PAYPAL_WEBHOOK_ID` | Your PayPal Webhook ID |
 
 ## 2. Viewing Error Logs
 
