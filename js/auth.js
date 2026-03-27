@@ -1,6 +1,18 @@
 // js/auth.js
 // Handles authentication tasks like login, registration check, and token management.
 
+// Intercept OAuth Tokens gracefully from URLs dynamically on page load
+const urlParams = new URLSearchParams(window.location.search);
+const oauthToken = urlParams.get('token');
+if (oauthToken) {
+    localStorage.setItem('token', oauthToken);
+    localStorage.setItem('role', urlParams.get('role') || 'affiliate');
+    localStorage.setItem('userId', urlParams.get('id') || '');
+    localStorage.setItem('username', urlParams.get('name') || '');
+    // Clean up URL so tokens are not visually exposed in address bar or re-processed
+    window.history.replaceState({}, document.title, window.location.pathname);
+}
+
 async function handleLogin(email, password) {
     // Clear any previous error messages
     const errorElement = document.getElementById('loginError');

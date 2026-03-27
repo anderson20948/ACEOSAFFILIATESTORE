@@ -442,10 +442,31 @@ app.get("/auth/google",
 );
 
 app.get("/auth/google/callback",
-  passport.authenticate("google", { failureRedirect: "/login" }),
+  passport.authenticate("google", { failureRedirect: "/users/login" }),
   (req, res) => {
-    // Successful authentication, redirect to central dashboard
-    res.redirect("/dashboard");
+    // Successful authentication, issue JWT token for frontend functionality
+    const userRole = req.user.role || 'affiliate';
+    const token = jwt.sign(
+        { id: req.user.id, email: req.user.email, role: userRole, name: req.user.name },
+        process.env.JWT_SECRET || 'aceos-secret-key',
+        { expiresIn: '24h' }
+    );
+    
+    // Sync backend cookie state
+    res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 24 * 60 * 60 * 1000
+    });
+
+    // Redirect to static frontends with query parameters so js/auth.js can cache the state
+    const query = `?token=${token}&role=${userRole}&id=${req.user.id}&name=${encodeURIComponent(req.user.name)}`;
+    if (userRole === 'admin') {
+      res.redirect("/admin.html" + query);
+    } else {
+      res.redirect("/users/dashboard" + query);
+    }
   }
 );
 
