@@ -284,7 +284,11 @@ app.use(express.urlencoded({ extended: false }));
 app.set("view engine", "ejs");
 app.use(cookieParser());
 
+// Trust Vercel's proxy properly so secure secure cookies work over HTTPS
+app.set("trust proxy", 1);
+
 app.use(
+
   session({
     secret: process.env.SESSION_SECRET,
     resave: false,

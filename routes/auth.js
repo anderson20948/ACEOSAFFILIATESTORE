@@ -58,8 +58,11 @@ router.post('/register', async (req, res) => {
 
         // 1. Initialize Passport Session (if available)
         if (req.logIn) {
-            req.logIn(newUser, (err) => {
-                if (err) logger.error('Passport logIn error during registration:', err);
+            await new Promise((resolve) => {
+                req.logIn(newUser, (err) => {
+                    if (err) logger.error('Passport logIn error during registration:', err);
+                    resolve();
+                });
             });
         }
 
@@ -134,8 +137,11 @@ router.post('/login', async (req, res) => {
 
         // 1. Initialize Passport Session (if available)
         if (req.logIn) {
-            req.logIn(user, (err) => {
-                if (err) logger.error('Passport logIn error:', err);
+            await new Promise((resolve) => {
+                req.logIn(user, (err) => {
+                    if (err) logger.error('Passport logIn error:', err);
+                    resolve();
+                });
             });
         }
 
