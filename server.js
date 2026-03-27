@@ -92,7 +92,12 @@ async function seedSuperAdmins() {
     logger.error("Seeding failed", { error: err.message });
   }
 }
-seedSuperAdmins();
+// Execute seeding only if not in a Vercel build environment and DB is available
+if (process.env.VERCEL !== '1') {
+  seedSuperAdmins();
+} else {
+  logger.info("Skipping automatic seeding in Vercel environment.");
+}
 
 // User Action Logger Middleware (non-blocking - fires in background)
 function logAction(req, res, next) {
@@ -675,8 +680,4 @@ if (require.main === module) {
 }
 
 module.exports = app;
-
-// Keep process alive if app.listen fails to hold event loop (Unlikely but for debugging)
-setInterval(() => {
-  if (process.env.DEBUG_HEARTBEAT) console.log('Heartbeat...');
-}, 60000);
+// module.exports = app;
