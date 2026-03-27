@@ -3,7 +3,7 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 const path = require("path");
 const { db } = require("./dbConfig");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const passport = require("passport");
 const flash = require("express-flash");
 const session = require("express-session");
@@ -657,9 +657,13 @@ app.use("/api/affiliate", require("./routes/affiliate"));
 app.use("/api/ads", require("./routes/advertising"));
 app.use("/t", require("./routes/tracking"));
 
-app.listen(PORT, () => {
-  logger.info(`Server running on http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    logger.info(`Server running on http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
 
 // Keep process alive if app.listen fails to hold event loop (Unlikely but for debugging)
 setInterval(() => {

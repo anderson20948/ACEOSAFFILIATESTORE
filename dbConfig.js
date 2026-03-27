@@ -5,8 +5,8 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error("CRITICAL: SUPABASE_URL or SUPABASE_ANON_KEY is missing from .env");
-  process.exit(1);
+  console.error("CRITICAL: SUPABASE_URL or SUPABASE_ANON_KEY is missing from environment variables.");
+  // process.exit(1); // Decouple from forceful crash to allow Vercel logs to capture state
 }
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);

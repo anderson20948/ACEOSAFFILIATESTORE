@@ -1,7 +1,7 @@
 const LocalStrategy = require("passport-local").Strategy;
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const { db } = require("./dbConfig");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const logger = require("./utils/logger");
 
 function initialize(passport) {
