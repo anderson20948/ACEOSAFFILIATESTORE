@@ -48,7 +48,7 @@ async function handleLogin(email, password) {
         }
 
         // Show success message before redirect
-        showNotification('Login successful! Redirecting...', 'success');
+        showToast('Login successful! Redirecting...', 'success');
 
         // Small delay to show the success message
         setTimeout(() => {
@@ -62,7 +62,7 @@ async function handleLogin(email, password) {
             loginBtn.disabled = false;
             loginBtn.textContent = 'Sign In';
         }
-        // Error handling is done in safeFetch, but we can add additional UI feedback here
+        // Error handling is handled by safeFetch and showToast
         console.error('Login failed:', err);
     }
 }
@@ -107,13 +107,13 @@ async function handleRegister() {
             localStorage.setItem('userId', data.id);
             localStorage.setItem('username', data.username);
 
-            showNotification(data.message || 'Welcome to Aceos! Redirecting...', 'success');
+            showToast(data.message || 'Welcome to Aceos! Redirecting...', 'success');
             setTimeout(() => {
                 window.location.href = '/dashboard';
             }, 800);
         } else if (data && data.message) {
             // Fallback for when auto-login is not provided
-            showNotification(data.message + ' Redirecting to login...', 'success');
+            showToast(data.message + ' Redirecting to login...', 'success');
             setTimeout(() => {
                 window.location.href = 'login.html';
             }, 1500);
@@ -171,59 +171,13 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// Notification Helper Function
+// showNotification is now a wrapper for showToast in utils.js
 function showNotification(message, type = 'info') {
-    // Remove any existing notifications
-    const existingNotifications = document.querySelectorAll('.notification');
-    existingNotifications.forEach(notification => notification.remove());
-
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
-    notification.textContent = message;
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 15px 20px;
-        border-radius: 5px;
-        color: white;
-        font-weight: 500;
-        z-index: 10000;
-        animation: slideIn 0.3s ease-out;
-    `;
-
-    // Set background color based on type
-    if (type === 'success') {
-        notification.style.backgroundColor = '#28a745';
-    } else if (type === 'error') {
-        notification.style.backgroundColor = '#dc3545';
+    if (typeof showToast === 'function') {
+        showToast(message, type);
     } else {
-        notification.style.backgroundColor = '#007bff';
+        console.info('Notification fallback:', message);
     }
-
-    // Add animation keyframes
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-    `;
-    document.head.appendChild(style);
-
-    // Add to page
-    document.body.appendChild(notification);
-
-    // Auto remove after 3 seconds
-    setTimeout(() => {
-        notification.style.animation = 'slideIn 0.3s ease-in reverse';
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.parentNode.removeChild(notification);
-            }
-        }, 300);
-    }, 3000);
 }
 
 // Forgot Password Handler

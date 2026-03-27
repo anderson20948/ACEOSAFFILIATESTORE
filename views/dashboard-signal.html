@@ -8,6 +8,9 @@
     <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet">
     <link rel="stylesheet" href="css/font-awesome.css">
     <link rel="stylesheet" href="css/dashboard.css">
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/dashboard-stats.js"></script>
 </head>
 
 <body class="dashboard-body">
@@ -17,11 +20,12 @@
             <a href="home.html" class="sidebar-brand">Aceos Portal</a>
         </div>
         <ul class="sidebar-nav">
-            <li><a href="dashboard-products.html"><i class="fa fa-th-large"></i> All Products</a></li>
-            <li><a href="dashboard-advertising.html"><i class="fa fa-bullhorn"></i> Advertising</a></li>
-            <li><a href="dashboard-commerce.html"><i class="fa fa-shopping-cart"></i> Commerce</a></li>
-            <li><a href="dashboard-signal.html" class="active"><i class="fa fa-signal"></i> Signal</a></li>
-            <li><a href="home.html"><i class="fa fa-home"></i> Back to Site</a></li>
+            <li><a href="/users/dashboard"><i class="fa fa-th-large"></i> Home</a></li>
+            <li><a href="/dashboard-products.html"><i class="fa fa-th-large"></i> All Products</a></li>
+            <li><a href="/dashboard-advertising.html"><i class="fa fa-bullhorn"></i> Advertising</a></li>
+            <li><a href="/dashboard-commerce.html"><i class="fa fa-shopping-cart"></i> Commerce</a></li>
+            <li><a href="/dashboard-signal.html" class="active"><i class="fa fa-signal"></i> Signal</a></li>
+            <li><a href="/home.html"><i class="fa fa-home"></i> Back to Site</a></li>
         </ul>
     </aside>
 
@@ -29,18 +33,81 @@
         <header class="dashboard-topbar">
             <h2>Signal</h2>
             <div class="user-menu">
-                <span>Welcome, User</span>
+                <span id="welcome-user">Welcome, User</span>
                 <div class="user-avatar"></div>
             </div>
         </header>
 
         <main class="dashboard-main">
-            <div class="dash-card">
-                <h1 class="page-title">One Score. Total Clarity.</h1>
-                <p>With built-in benchmarks and actionable insights, optimize your ad experiences with the Inventory
-                    Score. A metric that breaks down what's helping or hurting ad performance, so you can improve in
-                    real time.</p>
-                <a href="javascript:void(0)" onclick="openSignalModal()" class="btn-dash">Request Access</a>
+            <!-- Statistics -->
+            <div class="stats-grid">
+                <div class="stat-card earnings">
+                    <i class="fa fa-dollar"></i>
+                    <h4>Total Earnings</h4>
+                    <div class="value" id="stat-earnings">$0.00</div>
+                    <div class="real-time-badge"><div class="pulse-dot"></div> Real-time</div>
+                </div>
+                <div class="stat-card clicks">
+                    <i class="fa fa-mouse-pointer"></i>
+                    <h4>Total Clicks</h4>
+                    <div class="value" id="stat-clicks">0</div>
+                    <div class="real-time-badge"><div class="pulse-dot"></div> Real-time</div>
+                </div>
+                <div class="stat-card campaigns">
+                    <i class="fa fa-bullhorn"></i>
+                    <h4>Active Campaigns</h4>
+                    <div class="value" id="stat-campaigns">0</div>
+                    <div class="real-time-badge">Updated</div>
+                </div>
+                <div class="stat-card applications">
+                    <i class="fa fa-file-text-o"></i>
+                    <h4>Pending Apps</h4>
+                    <div class="value" id="stat-applications">0</div>
+                    <div class="real-time-badge">Pending</div>
+                </div>
+            </div>
+
+            <div id="signal-status-container" class="dash-card" style="margin-top: 30px; text-align: center; border-top: 5px solid #ffd700;">
+                <!-- Default / Inactive View -->
+                <div id="view-inactive">
+                    <h1 class="page-title">One Score. Total Clarity.</h1>
+                    <p>With built-in benchmarks and actionable insights, optimize your ad experiences with the Inventory
+                        Score. A metric that breaks down what's helping or hurting ad performance, so you can improve in
+                        real time.</p>
+                    <a href="javascript:void(0)" onclick="openSignalModal()" class="btn-dash">Request Access</a>
+                </div>
+
+                <!-- Pending View -->
+                <div id="view-pending" style="display: none;">
+                    <i class="fa fa-clock-o" style="font-size: 48px; color: #ffd700; margin-bottom: 15px;"></i>
+                    <h2 class="page-title">Request Under Review</h2>
+                    <p>Thank you for your interest in Signal! Our team is currently reviewing your account. You will receive an email notification once your access is approved.</p>
+                    <div class="status-badge" style="display: inline-block; background: #fff3cd; color: #856404; padding: 5px 15px; border-radius: 20px; font-size: 14px; font-weight: bold; border: 1px solid #ffeeba;">
+                        <i class="fa fa-hourglass-half"></i> Pending Approval
+                    </div>
+                </div>
+
+                <!-- Approved View (Console) -->
+                <div id="view-approved" style="display: none; text-align: left;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 class="page-title" style="margin: 0;">Signal Console</h2>
+                        <div class="status-badge" style="background: #d4edda; color: #155724; padding: 5px 15px; border-radius: 20px; font-size: 14px; font-weight: bold; border: 1px solid #c3e6cb;">
+                            <i class="fa fa-check-circle"></i> Active Access
+                        </div>
+                    </div>
+                    <div class="card-grid">
+                        <div class="dash-card" style="background: #f8f9fa;">
+                            <h5><i class="fa fa-code"></i> Implementation Tag</h5>
+                            <p style="font-size: 12px; color: #666;">Add this tag to your site's &lt;head&gt; to start measuring.</p>
+                            <code style="display: block; background: #eee; padding: 10px; border-radius: 4px; font-size: 11px; margin-top: 10px;">&lt;script src="https://aceos-affiliate.com/signal/tag.js?id=SIG-<%= typeof user !== 'undefined' ? user.substring(0,5).toUpperCase() : 'USER' %>"&gt;&lt;/script&gt;</code>
+                        </div>
+                        <div class="dash-card" style="background: #f8f9fa;">
+                            <h5><i class="fa fa-line-chart"></i> Real-time Insights</h5>
+                            <p style="font-size: 12px; color: #666;">View detailed attention and viewability metrics.</p>
+                            <button class="btn-dash" style="width: 100%; margin-top: 10px;">Go to Analytics</button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div style="text-align: center; margin: 40px 0;">
@@ -162,7 +229,7 @@
                             <p style="color: #666;">Thank you for your interest. Our team will review your request and
                                 get back to you shortly.</p>
                             <button class="btn-dash" onclick="closeSignalModal()"
-                                style="margin-top: 20px;">Close</button>
+                                style="margin-top: 20px;">Return to Dashboard</button>
                         </div>
                     </div>
                 </div>
@@ -171,6 +238,21 @@
     </div>
 
     <script>
+        // Check Login & Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!isLoggedIn()) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Set welcome message
+            const username = getUsername() || 'User';
+            document.getElementById('welcome-user').innerText = `Welcome, ${username}`;
+            
+            checkSignalStatus();
+            checkSignalForm();
+        });
+
         function openSignalModal() {
             document.getElementById('signalModal').style.display = 'block';
             document.getElementById('signalFormView').style.display = 'block';
@@ -182,11 +264,18 @@
         }
 
         function checkSignalForm() {
-            var fName = document.getElementById('sigFirstName').value;
-            var lName = document.getElementById('sigLastName').value;
-            var email = document.getElementById('sigEmail').value;
-            var terms = document.getElementById('sigTerms').checked;
-            var btn = document.getElementById('btnSignalSubmit');
+            const fNameEl = document.getElementById('sigFirstName');
+            const lNameEl = document.getElementById('sigLastName');
+            const emailEl = document.getElementById('sigEmail');
+            const termsEl = document.getElementById('sigTerms');
+            const btn = document.getElementById('btnSignalSubmit');
+
+            if (!fNameEl || !lNameEl || !emailEl || !termsEl || !btn) return;
+
+            var fName = fNameEl.value;
+            var lName = lNameEl.value;
+            var email = emailEl.value;
+            var terms = termsEl.checked;
 
             if (fName && lName && email && terms) {
                 btn.classList.add('active');
@@ -197,23 +286,67 @@
             }
         }
 
-        function submitSignalRequest() {
-            var btn = document.getElementById('btnSignalSubmit');
-            if (btn.disabled) return;
+        async function checkSignalStatus() {
+            try {
+                const data = await safeFetch('/api/affiliate/applications');
+                const apps = data.applications || [];
+                const signalApp = apps.find(a => a.application_type === 'signal');
+                
+                if (signalApp) {
+                    // Hide all views first
+                    document.getElementById('view-inactive').style.display = 'none';
+                    document.getElementById('view-pending').style.display = 'none';
+                    document.getElementById('view-approved').style.display = 'none';
 
-            // Simulate API call
-            btn.innerHTML = 'Sending...';
-            setTimeout(function () {
-                document.getElementById('signalFormView').style.display = 'none';
-                document.getElementById('signalSuccessView').style.display = 'block';
-                btn.innerHTML = 'Request Access'; // Reset for next time
-            }, 1000);
+                    if (signalApp.status === 'approved') {
+                        document.getElementById('view-approved').style.display = 'block';
+                    } else if (signalApp.status === 'pending') {
+                        document.getElementById('view-pending').style.display = 'block';
+                    } else {
+                        // Rejected or other, go back to inactive
+                        document.getElementById('view-inactive').style.display = 'block';
+                    }
+                }
+            } catch (err) {
+                console.warn('Failed to fetch signal status:', err.message);
+            }
         }
 
-        // Initialize button state
-        document.addEventListener('DOMContentLoaded', function () {
-            checkSignalForm();
-        });
+        async function submitSignalRequest() {
+            var btn = document.getElementById('btnSignalSubmit');
+            if (!btn || btn.disabled) return;
+
+            const originalText = btn.innerHTML;
+            setLoading(true, 'btnSignalSubmit', 'Submitting...');
+
+            try {
+                const payload = {
+                    application_type: 'signal',
+                    additional_notes: `Name: ${document.getElementById('sigFirstName').value} ${document.getElementById('sigLastName').value}, Company: ${document.getElementById('sigCompany').value}`,
+                    paypal_email: document.getElementById('sigEmail').value // Using email field as identifier
+                };
+
+                const data = await safeFetch('/api/affiliate/advertising/apply', {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+
+                if (data.success) {
+                    // Update background UI immediately
+                    checkSignalStatus();
+                    
+                    showToast("Signal access requested successfully!", "success");
+                    document.getElementById('signalFormView').style.display = 'none';
+                    document.getElementById('signalSuccessView').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Signal request error:', error);
+                // Errors are handled by safeFetch
+            } finally {
+                setLoading(false, 'btnSignalSubmit');
+                btn.innerHTML = originalText;
+            }
+        }
     </script>
 
 </body>

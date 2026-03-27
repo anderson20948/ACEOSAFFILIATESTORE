@@ -63,42 +63,132 @@
     /* Stats Grid Styles */
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 20px;
-      margin-bottom: 30px;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 25px;
+      margin-bottom: 40px;
     }
-
+    
     .stat-card {
       background: #fff;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-      text-align: center;
-      transition: transform 0.2s;
+      padding: 30px 25px;
+      border-radius: 16px;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+      text-align: left;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(0,0,0,0.03);
     }
-
+    
     .stat-card:hover {
-      transform: translateY(-5px);
+      transform: translateY(-8px);
+      box-shadow: 0 15px 30px rgba(0,0,0,0.1);
     }
-
+    
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+    }
+    
+    .stat-card.earnings::before { background: linear-gradient(90deg, #28a745, #85e09b); }
+    .stat-card.clicks::before { background: linear-gradient(90deg, #007bff, #66b2ff); }
+    .stat-card.campaigns::before { background: linear-gradient(90deg, #ffc107, #ffe082); }
+    .stat-card.applications::before { background: linear-gradient(90deg, #6f42c1, #a389d4); }
+    
     .stat-card h4 {
       margin: 0;
-      font-size: 14px;
-      color: #666;
+      font-size: 13px;
+      font-weight: 700;
+      color: #8898aa;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .stat-card .value {
+      font-size: 32px;
+      font-weight: 800;
+      margin: 15px 0 5px 0;
+      color: #32325d;
+    }
+    
+    .stat-card i {
+      font-size: 20px;
+      float: right;
+      opacity: 0.2;
+      position: absolute;
+      right: 25px;
+      top: 25px;
+    }
+    
+    .real-time-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #24b47e;
+      background: #e6f7ef;
+      padding: 2px 8px;
+      border-radius: 12px;
+      margin-top: 5px;
+    }
+    
+    .pulse-dot {
+      width: 6px;
+      height: 6px;
+      background: #24b47e;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(36, 180, 126, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(36, 180, 126, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(36, 180, 126, 0); }
+    }
+
+    .status-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
       text-transform: uppercase;
     }
+    .status-active { background: #d4edda; color: #155724; }
+    .status-pending { background: #fff3cd; color: #856404; }
+    .status-none { background: #e9ecef; color: #6c757d; }
 
-    .stat-card .value {
-      font-size: 28px;
-      font-weight: 700;
-      margin: 10px 0;
-      color: #333;
+    .service-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 20px;
+      background: #fff;
+      border-radius: 12px;
+      margin-bottom: 15px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+      border: 1px solid rgba(0,0,0,0.05);
+      transition: all 0.2s ease;
+      text-decoration: none;
+      color: inherit;
     }
-
-    .stat-card i {
-      font-size: 24px;
-      margin-bottom: 10px;
-      color: #007bff;
+    .service-card:hover {
+      transform: translateX(5px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.05);
+      border-color: #007bff44;
+    }
+    .service-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 15px;
     }
   </style>
 </head>
@@ -111,11 +201,12 @@
       <a href="home.html" class="sidebar-brand">Aceos Portal</a>
     </div>
     <ul class="sidebar-nav">
-      <li><a href="dashboard.html" class="active"><i class="fa fa-th-large"></i> Home</a></li>
-      <li><a href="dashboard-advertising.html"><i class="fa fa-bullhorn"></i> Advertising</a></li>
-      <li><a href="dashboard-commerce.html"><i class="fa fa-shopping-cart"></i> Commerce</a></li>
-      <li><a href="dashboard-signal.html"><i class="fa fa-signal"></i> Signal</a></li>
-      <li><a href="home.html"><i class="fa fa-home"></i> Back to Site</a></li>
+      <li><a href="/users/dashboard" class="active"><i class="fa fa-th-large"></i> Home</a></li>
+      <li><a href="/dashboard-advertising.html"><i class="fa fa-bullhorn"></i> Advertising</a></li>
+      <li><a href="/dashboard-commerce.html"><i class="fa fa-shopping-cart"></i> Commerce</a></li>
+      <li><a href="/dashboard-signal.html"><i class="fa fa-signal"></i> Signal</a></li>
+      <li><a href="#" onclick="showSection('profile')"><i class="fa fa-user"></i> Profile Settings</a></li>
+      <li><a href="/home.html"><i class="fa fa-home"></i> Back to Site</a></li>
     </ul>
   </aside>
 
@@ -124,46 +215,137 @@
     <!-- Topbar -->
     <header class="dashboard-topbar">
       <h2>Welcome to Aceos</h2>
-      <div class="user-menu">
+      <div class="user-menu" onclick="showSection('profile')" style="cursor: pointer;">
         <span id="welcome-user">Welcome, <%= user %></span>
-        <div class="user-avatar"></div>
+        <div class="user-avatar" id="topbar-avatar" style="background-size: cover; background-position: center;"></div>
       </div>
     </header>
 
     <!-- Main View -->
     <main class="dashboard-main">
       <div class="stats-grid">
-        <div class="stat-card">
+        <div class="stat-card earnings">
           <i class="fa fa-dollar"></i>
           <h4>Total Earnings</h4>
           <div class="value" id="stat-earnings">$0.00</div>
+          <div class="real-time-badge"><div class="pulse-dot"></div> Real-time</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card clicks">
           <i class="fa fa-mouse-pointer"></i>
           <h4>Total Clicks</h4>
           <div class="value" id="stat-clicks">0</div>
+          <div class="real-time-badge"><div class="pulse-dot"></div> Real-time</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card campaigns">
           <i class="fa fa-bullhorn"></i>
           <h4>Active Campaigns</h4>
           <div class="value" id="stat-campaigns">0</div>
+          <div class="real-time-badge">Updated</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card applications">
           <i class="fa fa-file-text-o"></i>
           <h4>Pending Apps</h4>
           <div class="value" id="stat-applications">0</div>
+          <div class="real-time-badge">Pending</div>
         </div>
       </div>
 
-      <div class="card-grid">
-        <!-- ... existing cards ... -->
+      <div class="row" style="margin-top: 20px;">
+        <div class="eight columns">
+          <div class="dash-card">
+            <h3><i class="fa fa-server"></i> Service Status Overview</h3>
+            <p style="margin-bottom: 20px;">Track your access and approval status for Aceos premium services.</p>
+            
+            <div id="service-status-list">
+              <a href="/dashboard-advertising.html" class="service-card" id="status-card-advertising">
+                <div style="display: flex; align-items: center;">
+                  <div class="service-icon" style="background: #e7f1ff; color: #007bff;"><i class="fa fa-bullhorn"></i></div>
+                  <div>
+                    <div style="font-weight: 700; font-size: 14px;">Advertising Services</div>
+                    <div style="font-size: 12px; color: #8898aa;">Native ad monetization</div>
+                  </div>
+                </div>
+                <span class="status-badge status-none" id="badge-advertising">Checking...</span>
+              </a>
+
+              <a href="/dashboard-commerce.html" class="service-card" id="status-card-commerce">
+                <div style="display: flex; align-items: center;">
+                  <div class="service-icon" style="background: #e6f7ef; color: #28a745;"><i class="fa fa-shopping-cart"></i></div>
+                  <div>
+                    <div style="font-weight: 700; font-size: 14px;">Commerce Integration</div>
+                    <div style="font-size: 12px; color: #8898aa;">Affiliate & supply chain</div>
+                  </div>
+                </div>
+                <span class="status-badge status-none" id="badge-commerce">Checking...</span>
+              </a>
+
+              <a href="/dashboard-signal.html" class="service-card" id="status-card-signal">
+                <div style="display: flex; align-items: center;">
+                  <div class="service-icon" style="background: #fff8e1; color: #ffc107;"><i class="fa fa-signal"></i></div>
+                  <div>
+                    <div style="font-weight: 700; font-size: 14px;">Signal Console</div>
+                    <div style="font-size: 12px; color: #8898aa;">Real-time attention data</div>
+                  </div>
+                </div>
+                <span class="status-badge status-none" id="badge-signal">Checking...</span>
+              </a>
+            </div>
+          </div>
+
+          <div class="dash-card" style="margin-top: 30px;">
+            <h3><i class="fa fa-line-chart"></i> Recent Activity</h3>
+            <p>Operational tracking of your latest interactions.</p>
+            <div id="user-reports-list" style="margin-top: 15px; font-size: 14px;">
+              <p>Loading activity reports...</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="four columns">
+          <div class="dash-card" style="height: 100%; border-left: 4px solid #007bff;">
+            <h4><i class="fa fa-question-circle"></i> Quick Help</h4>
+            <ul style="list-style: none; padding: 0; font-size: 13px;">
+              <li style="margin-bottom: 12px;"><a href="/about.html">How Aceos Works</a></li>
+              <li style="margin-bottom: 12px;"><a href="/contact.html">Support Center</a></li>
+              <li style="margin-bottom: 12px;"><a href="/docs">API Documentation</a></li>
+            </ul>
+            <div style="margin-top: 30px; padding: 15px; background: #f8f9fe; border-radius: 8px;">
+              <p style="font-size: 11px; color: #8898aa; line-height: 1.4;">Need a personalized walkthrough? Our team is available 24/7 to help you optimize your supply.</p>
+              <button class="btn-dash" style="width: 100%; padding: 8px; font-size: 11px;">Chat with Expert</button>
+            </div>
+          </div>
+        </div>
+      </div>
       </div>
 
-      <div class="dash-card" style="margin-top: 30px;">
-        <h3><i class="fa fa-line-chart"></i> Advanced Reporting</h3>
-        <p>Operational tracking of your recent interactions.</p>
-        <div id="user-reports-list" style="margin-top: 15px; font-size: 14px;">
-          <p>Loading activity reports...</p>
+      <!-- Profile Settings Section (Hidden by default) -->
+      <div id="section-profile" style="display: none;" class="fade-in">
+        <div class="dash-card">
+          <h3><i class="fa fa-user-circle"></i> Profile Settings</h3>
+          <p>Personalize your dashboard experience and update your account details.</p>
+          
+          <div class="row" style="margin-top: 30px;">
+            <div class="four columns" style="text-align: center;">
+              <div id="profile-preview" style="width: 150px; height: 150px; border-radius: 50%; background: #eee; margin: 0 auto 20px; background-size: cover; background-position: center; border: 3px solid #007bff;"></div>
+              <button class="btn-dash" onclick="document.getElementById('avatar-input').click()">
+                <i class="fa fa-camera"></i> Change Photo
+              </button>
+              <input type="file" id="avatar-input" style="display: none;" accept="image/*" onchange="uploadAvatar(this)">
+            </div>
+            <div class="eight columns">
+              <form id="profile-form">
+                <div class="form-group">
+                  <label>Full Name</label>
+                  <input type="text" id="profile-name" class="u-full-width" readonly>
+                  <small style="color: #888;">Name updates are currently restricted. Contact support to change.</small>
+                </div>
+                <div class="form-group">
+                  <label>Email Address</label>
+                  <input type="email" id="profile-email" class="u-full-width" readonly>
+                </div>
+              </form>
+            </div>
+          </div>
         </div>
       </div>
     </main>
@@ -174,6 +356,7 @@
 
   <script src="/js/utils.js"></script>
   <script src="/js/auth.js"></script>
+  <script src="/js/dashboard-stats.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       if (!isLoggedIn()) {
@@ -232,14 +415,108 @@
         }
       }
 
+      // Load Service Statuses
+      async function loadServiceStatuses() {
+        try {
+          const data = await safeFetch('/api/affiliate/applications');
+          const apps = data.applications || [];
+          
+          const services = ['advertising', 'commerce', 'signal'];
+          services.forEach(type => {
+            const app = apps.find(a => a.application_type === type);
+            const badge = document.getElementById(`badge-${type}`);
+            if (!badge) return;
+
+            if (app) {
+              badge.textContent = app.status.toUpperCase();
+              badge.className = `status-badge status-${app.status === 'approved' ? 'active' : 'pending'}`;
+            } else {
+              badge.textContent = 'NOT STARTED';
+              badge.className = 'status-badge status-none';
+            }
+          });
+        } catch (err) {
+          console.warn('Failed to load service statuses');
+        }
+      }
+
       // Initial loads
       loadUserReports();
+      loadServiceStatuses();
+      loadUserProfile();
     });
-  </script>
-  <a href="/users/logout">Logout</a>
 
-  <h4>Hello <%= user %>
-  </h4>
+    function showSection(sectionId) {
+        const sections = ['profile'];
+        const mainView = document.querySelector('.stats-grid').parentElement;
+        
+        if (sectionId === 'profile') {
+            document.querySelector('.stats-grid').style.display = 'none';
+            document.querySelector('.row').style.display = 'none';
+            document.getElementById('section-profile').style.display = 'block';
+        } else {
+            document.querySelector('.stats-grid').style.display = 'grid';
+            document.querySelector('.row').style.display = 'flex';
+            document.getElementById('section-profile').style.display = 'none';
+        }
+    }
+
+    async function loadUserProfile() {
+        try {
+            const user = await safeFetch('/api/auth/profile');
+            if (user) {
+                document.getElementById('profile-name').value = user.name;
+                document.getElementById('profile-email').value = user.email;
+                
+                if (user.profile_picture_url) {
+                    const url = user.profile_picture_url;
+                    document.getElementById('topbar-avatar').style.backgroundImage = `url(${url})`;
+                    document.getElementById('profile-preview').style.backgroundImage = `url(${url})`;
+                }
+            }
+        } catch (err) {
+            console.error('Error loading profile:', err);
+        }
+    }
+
+    async function uploadAvatar(input) {
+        if (!input.files || !input.files[0]) return;
+        
+        const formData = new FormData();
+        formData.append('avatar', input.files[0]);
+        
+        showToast('Uploading profile picture...', 'info');
+        
+        try {
+            const response = await fetch('/api/profile/upload-avatar', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    // Note: Don't set Content-Type, browser does it with boundary for FormData
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showToast('Profile picture updated!', 'success');
+                const url = result.imageUrl;
+                document.getElementById('topbar-avatar').style.backgroundImage = `url(${url})`;
+                document.getElementById('profile-preview').style.backgroundImage = `url(${url})`;
+            } else {
+                showToast(result.message || 'Upload failed', 'error');
+            }
+        } catch (err) {
+            showToast('Network error during upload', 'error');
+            console.error(err);
+        }
+    }
+  </script>
+    <!-- include Activity Tracker & Stats Engine -->
+    <script src="js/activity-tracker.js"></script>
+    <script src="js/dashboard-stats.js"></script>
+
 </body>
 
 </html>

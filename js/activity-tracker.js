@@ -281,7 +281,10 @@ class ActivityTracker {
     }
 
     // Start buffer flushing interval
-}, 30000); // Every 30 seconds
+    startBufferFlush() {
+        this.bufferFlushInterval = setInterval(() => {
+            this.flushActivities();
+        }, 30000); // Every 30 seconds
     }
 
 // Start fetching user stats periodically

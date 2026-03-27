@@ -28,23 +28,31 @@ const verifyAuth = (req, res, next) => {
 
 // Upload a product
 router.post('/upload', verifyAuth, upload.single('image'), async (req, res) => {
-    const { title, description, price } = req.body;
+    const { title, description, price, category } = req.body;
     const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
-    if (!title || !price) {
-        return res.status(400).json({ error: 'Title and price are required.' });
+    if (!title || !price || !category) {
+        return res.status(400).json({ error: 'Title, price, and category are required.' });
     }
 
     try {
         const { data: newProduct, error } = await db
             .from("products")
             .insert([
-                { user_id: req.user.id, title, description, price, image_url: imageUrl, status: 'pending' }
+                { 
+                    user_id: req.user.id, 
+                    title, 
+                    description, 
+                    price: parseFloat(price), 
+                    category,
+                    image_url: imageUrl, 
+                    status: 'pending' 
+                }
             ])
             .select("*");
 
         if (error) throw error;
-        res.status(201).json({ message: 'Product uploaded and pending approval.', product: newProduct[0] });
+        res.status(201).json({ message: 'Product uploaded successfully and is now pending approval.', product: newProduct[0] });
     } catch (err) {
         logger.error(err);
         res.status(500).json({ error: 'Error uploading product.' });

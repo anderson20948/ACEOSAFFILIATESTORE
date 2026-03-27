@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Set admin name in header
-    const adminName = localStorage.getItem('username') || 'Admin';
+    const adminName = getUsername() || 'Admin';
     const el = document.getElementById('admin-name');
     if (el) el.textContent = adminName;
 
@@ -190,18 +190,7 @@ function showAdSubTab(subTabName) {
 
 // ─────────────────────────── HELPER: FETCH WITH AUTH ────────────────────────
 async function adminFetch(path, options = {}) {
-    const token = localStorage.getItem('token');
-    const resp = await fetch(API_BASE + path, {
-        ...options,
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-            ...options.headers
-        }
-    });
-    const data = await resp.json();
-    if (!resp.ok) throw new Error(data.error || data.message || `Request failed (${resp.status})`);
-    return data;
+    return safeFetch(API_BASE + path, options);
 }
 
 function formatCurrency(amount) {
@@ -264,34 +253,45 @@ async function loadApplications() {
             return;
         }
 
-        container.innerHTML = apps.map(app => `
-            <div class="application-card" style="border-left-color: ${app.status === 'pending' ? '#007bff' : app.status === 'approved' ? '#28a745' : '#dc3545'}">
+        container.innerHTML = apps.map(app => {
+            const isSignal = app.application_type === 'signal';
+            const statusColor = app.status === 'pending' ? '#007bff' : app.status === 'approved' ? '#28a745' : '#dc3545';
+            
+            return `
+            <div class="application-card" style="border-left: 5px solid ${statusColor}; position: relative; margin-bottom: 15px; padding: 15px; background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                ${isSignal ? '<div style="position:absolute; top: -10px; right: 20px; background: #ffd700; color: #000; padding: 2px 10px; border-radius: 5px; font-size: 10px; font-weight: bold; border: 1px solid #000;">SIGNAL ACCESS</div>' : ''}
                 <div class="application-header">
-                    <div>
-                        <strong>${app.user_name || 'Unknown'}</strong> &lt;${app.user_email || app.email || ''}&gt;
-                        <span class="role-badge role-${app.status === 'approved' ? 'affiliate' : 'user'}" style="margin-left:10px">${app.status}</span>
-                    </div>
-                    <div class="application-actions">
-                        ${app.status === 'pending' ? `
-                            <button class="btn-approve" onclick="approveApplication('${app.id}', '${app.user_email || app.email}', '${app.application_type || 'standard'}')">
-                                <i class="fa fa-check"></i> Approve
-                            </button>
-                            <button class="btn-reject" onclick="rejectApplication('${app.id}', '${app.user_email || app.email}', '${app.application_type || 'standard'}')">
-                                <i class="fa fa-times"></i> Reject
-                            </button>
-                        ` : ''}
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div>
+                            <strong style="font-size: 15px;">${app.user_name || 'Unknown'}</strong> <br>
+                            <span style="color: #666; font-size: 12px;">${app.user_email || app.email || ''}</span>
+                        </div>
+                        <span class="role-badge" style="background: ${statusColor}22; color: ${statusColor}; border: 1px solid ${statusColor}44; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: bold;">${app.status.toUpperCase()}</span>
                     </div>
                 </div>
-                <div style="font-size:13px;color:#555;">
-                    <strong>Type:</strong> ${app.application_type || 'General'} &nbsp;|&nbsp;
-                    <strong>Budget:</strong> ${formatCurrency(app.monthly_budget || 0)} &nbsp;|&nbsp;
-                    <strong>Submitted:</strong> ${formatDate(app.created_at)}
+                <div style="font-size:13px;color:#555;margin-top:10px;">
+                    <strong>Type:</strong> <span style="${isSignal ? 'color: #856404; font-weight: bold;' : ''}">${isSignal ? '<i class="fa fa-signal"></i> SIGNAL' : app.application_type?.toUpperCase() || 'GENERAL'}</span> &nbsp;|&nbsp;
+                    <strong>Date:</strong> ${formatDate(app.created_at)}
                 </div>
-                ${app.business_name ? `<div style="margin-top:6px;font-size:13px;"><strong>Business:</strong> ${app.business_name}</div>` : ''}
-                ${app.website_url ? `<div style="font-size:13px;"><strong>Website:</strong> <a href="${app.website_url}" target="_blank">${app.website_url}</a></div>` : ''}
-                ${app.target_audience ? `<div style="font-size:13px;"><strong>Target:</strong> ${app.target_audience}</div>` : ''}
+                ${app.website_url ? `<div style="font-size:13px; margin-top: 5px;"><strong>Website:</strong> <a href="${app.website_url}" target="_blank" style="color: #007bff;">${app.website_url}</a></div>` : ''}
+                <div class="application-actions" style="margin-top:15px; display:flex; gap:10px; border-top: 1px solid #eee; padding-top: 15px;">
+                    ${app.status === 'pending' ? `
+                        <button id="btn-approve-${app.id}" class="btn-approve" onclick="approveApplication('${app.id}', '${app.user_email || app.email}', '${app.application_type || 'standard'}')" style="background: #28a745; color: #fff; border: none; padding: 6px 15px; border-radius: 4px; cursor: pointer; font-size: 13px;">
+                            <i class="fa fa-check"></i> Approve
+                        </button>
+                        <button id="btn-reject-${app.id}" class="btn-reject" onclick="rejectApplication('${app.id}', '${app.user_email || app.email}', '${app.application_type || 'standard'}')" style="background: #dc3545; color: #fff; border: none; padding: 6px 15px; border-radius: 4px; cursor: pointer; font-size: 13px;">
+                            <i class="fa fa-times"></i> Reject
+                        </button>
+                    ` : `
+                        <span style="color:#666; font-size:12px; display: flex; align-items: center; gap: 5px;">
+                            <i class="fa fa-check-circle" style="color: ${statusColor}"></i> 
+                            Decided: ${app.status.toUpperCase()} on ${formatDate(app.updated_at || app.created_at)}
+                        </span>
+                    `}
+                </div>
             </div>
-        `).join('');
+            `;
+        }).join('');
     } catch (err) {
         container.innerHTML = `<p style="color:#dc3545;padding:20px;">Failed to load applications: ${err.message}</p>`;
     }
@@ -299,30 +299,38 @@ async function loadApplications() {
 
 async function approveApplication(id, email, type) {
     if (!confirm(`Approve application from ${email}?`)) return;
+    const btnId = `btn-approve-${id}`;
+    setLoading(true, btnId, 'Approving...');
     try {
         await adminFetch('/approve-application', {
             method: 'POST',
             body: JSON.stringify({ applicationId: id, userEmail: email, applicationType: type })
         });
-        showNotification('Application approved!', 'success');
+        showToast('Application approved! An email notification has been sent.', 'success');
         loadApplications();
         loadOverviewStats();
     } catch (err) {
-        showNotification('Error: ' + err.message, 'error');
+        showToast('Error: ' + err.message, 'error');
+    } finally {
+        setLoading(false, btnId);
     }
 }
 
 async function rejectApplication(id, email, type) {
-    const reason = prompt('Reason for rejection (optional):') || 'Does not meet our requirements';
+    const reason = prompt('Reason for rejection:') || 'Does not meet our requirements';
+    const btnId = `btn-reject-${id}`;
+    setLoading(true, btnId, 'Rejecting...');
     try {
         await adminFetch('/reject-application', {
             method: 'POST',
             body: JSON.stringify({ applicationId: id, userEmail: email, applicationType: type, reason })
         });
-        showNotification('Application rejected.', 'success');
+        showToast('Application rejected.', 'success');
         loadApplications();
     } catch (err) {
-        showNotification('Error: ' + err.message, 'error');
+        showToast('Error: ' + err.message, 'error');
+    } finally {
+        setLoading(false, btnId);
     }
 }
 
@@ -449,6 +457,9 @@ async function loadUsers() {
                                 <td style="padding:12px"><span class="role-badge role-${u.role}">${u.role}</span></td>
                                 <td style="padding:12px;font-size:13px">${formatDate(u.created_at)}</td>
                                 <td style="padding:12px">
+                                    <button class="btn-approve" style="font-size:12px; margin-right: 5px; background: #6c757d;" onclick="resetUserPassword('${u.id}', '${u.email}')">
+                                        <i class="fa fa-key"></i> Reset Pass
+                                    </button>
                                     <button class="btn-danger" style="font-size:12px" onclick="deleteUser('${u.id}', '${u.name || u.username}')">
                                         <i class="fa fa-trash"></i> Remove
                                     </button>
@@ -954,5 +965,18 @@ async function processPendingPayments(event) {
             processBtn.innerHTML = originalText;
             processBtn.disabled = false;
         }
+    }
+}
+
+async function resetUserPassword(userId, email) {
+    if (!confirm(`Send a password reset email to ${email}?`)) return;
+    try {
+        const response = await adminFetch('/reset-user-password', {
+            method: 'POST',
+            body: JSON.stringify({ userId })
+        });
+        showNotification(`Password reset email sent to ${email}`, 'success');
+    } catch (err) {
+        showNotification('Error: ' + err.message, 'error');
     }
 }

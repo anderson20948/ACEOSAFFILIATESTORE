@@ -4,6 +4,20 @@ const { db } = require('../dbConfig');
 const logger = require('../utils/logger');
 const { trackingLimiter } = require('../middleware/rateLimiter');
 
+// Authentication Middleware (Imported from server logic/helper)
+const ensureAuthenticated = (req, res, next) => {
+    if (req.isAuthenticated()) return next();
+    const token = req.cookies.token || req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ success: false, message: 'Authentication required' });
+    try {
+        const decoded = require('jsonwebtoken').verify(token, process.env.JWT_SECRET || 'aceos-secret-key');
+        req.user = decoded;
+        next();
+    } catch (e) {
+        res.status(401).json({ success: false, message: 'Session expired' });
+    }
+};
+
 // Advertising Constants
 const AD_IMPRESSION_VALUE = 0.001; // $0.001 per impression
 const AD_CLICK_VALUE = 0.05;      // $0.05 per click
@@ -146,6 +160,64 @@ router.post('/click', trackingLimiter, async (req, res) => {
         res.json({ success: true });
     } catch (err) {
         logger.error("Error tracking click:", err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// POST Create Ad (User Submission)
+router.post('/create', ensureAuthenticated, async (req, res) => {
+    const { title, content, image_url, target_url } = req.body;
+    const userId = req.user.id;
+
+    if (!title || !target_url) {
+        return res.status(400).json({ success: false, message: 'Title and Target URL are required' });
+    }
+
+    try {
+        // Multi-tier check for advertising permission
+        const { data: user, error: userErr } = await db.from('users').select('advertising_status').eq('id', userId).single();
+        if (userErr || !user || user.advertising_status !== 'active') {
+             return res.status(403).json({ success: false, message: 'Your advertising account is not active. Please apply first.' });
+        }
+
+        const { data, error } = await db
+            .from('system_ads')
+            .insert([
+                {
+                    title,
+                    content,
+                    image_url,
+                    target_url,
+                    user_id: userId,
+                    is_active: true, // Activated in real-time as requested
+                    display_priority: 0,
+                    created_at: new Date(),
+                    updated_at: new Date()
+                }
+            ])
+            .select();
+
+        if (error) throw error;
+        res.json({ success: true, message: 'Ad created and live!', ad: data[0] });
+    } catch (err) {
+        logger.error("Error creating ad:", err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// GET My Ads
+router.get('/my-ads', ensureAuthenticated, async (req, res) => {
+    try {
+        const { data: ads, error } = await db
+            .from('system_ads')
+            .select('*')
+            .eq('user_id', req.user.id)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        res.json({ success: true, ads });
+    } catch (err) {
+        logger.error("Error fetching my ads:", err);
         res.status(500).json({ success: false, message: err.message });
     }
 });

@@ -976,4 +976,53 @@ router.delete('/delete-user/:id', verifyAdmin, async (req, res) => {
     }
 });
 
+// POST /reset-user-password (Admin only)
+router.post('/reset-user-password', verifyAdmin, async (req, res) => {
+    const { userId } = req.body;
+    if (!userId) return res.status(400).json({ error: 'User ID is required' });
+
+    try {
+        const { data: user, error: userError } = await db
+            .from('users')
+            .select('email, name')
+            .eq('id', userId)
+            .single();
+
+        if (userError || !user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Generate 6-digit code
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 mins
+
+        // Store reset code
+        const { error: resetError } = await db
+            .from('password_resets')
+            .insert([{
+                email: user.email,
+                code: code,
+                expires_at: expiresAt,
+                verified: false
+            }]);
+
+        if (resetError) throw resetError;
+
+        // Send email
+        await emailService.sendPasswordResetCode(user.email, code);
+
+        // Log action
+        await db.from('system_logs').insert([{
+            user_id: req.user?.id,
+            activity_type: 'password_reset_triggered',
+            details: `Admin triggered password reset for: ${user.email}`
+        }]).catch(() => {});
+
+        res.json({ success: true, message: `Password reset email sent to ${user.email}` });
+    } catch (err) {
+        logger.error('Error triggering password reset:', err);
+        res.status(500).json({ error: 'Error triggering password reset' });
+    }
+});
+
 module.exports = router;

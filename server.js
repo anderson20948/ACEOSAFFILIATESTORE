@@ -171,8 +171,8 @@ function checkSuperAdmin(req, res, next) {
     next();
   } catch (err) {
     logger.error('Invalid token for admin dashboard access', { error: err.message });
-    if (req.path.startsWith('/api')) {
-      return res.status(403).json({ error: "Access denied. Super Admin privileges required." });
+    if (req.path.startsWith('/api/')) {
+      return res.status(401).json({ error: "Your session has expired. Please log in again." });
     }
     res.redirect("/users/login");
   }
@@ -347,6 +347,7 @@ const adminRouter = require('./routes/admin');
 const paypalRouter = require('./routes/paypal');
 const advertisingRouter = require('./routes/advertising');
 const trackingRouter = require('./routes/tracking');
+const profileRouter = require('./routes/profile');
 
 app.use('/api/auth', authRouter);
 app.use('/api/products', productsRouter);
@@ -355,7 +356,11 @@ app.use('/api/admin', adminRouter);
 app.use('/api/paypal', paypalRouter);
 app.use('/api/advertising', advertisingRouter);
 app.use('/api/tracking', trackingRouter);
+app.use('/api/profile', profileRouter);
 app.use(logAction);
+
+// Static serving for profile uploads
+app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
 // Pages
 app.get("/", (req, res) => {
@@ -635,6 +640,9 @@ function ensureAuthenticated(req, res, next) {
   const token = req.cookies.token || req.headers.authorization?.split(' ')[1];
   if (!token) {
     logger.warn('Unauthorized access attempt to protected route', { path: req.path, ip: req.ip });
+    if (req.path.startsWith('/api/')) {
+      return res.status(401).json({ error: "Authentication required. Please log in." });
+    }
     return res.redirect("/users/login");
   }
 
@@ -644,6 +652,9 @@ function ensureAuthenticated(req, res, next) {
     return next();
   } catch (err) {
     logger.error('Invalid token for protected route access', { error: err.message });
+    if (req.path.startsWith('/api/')) {
+      return res.status(401).json({ error: "Your session has expired. Please log in again." });
+    }
     return res.redirect("/users/login");
   }
 }

@@ -92,28 +92,33 @@ router.get("/applications", async (req, res) => {
     }
 });
 
-// POST Submit Advertising Application (Restored)
+// POST Submit Advertising/Signal Application (Formal Request)
 router.post("/advertising/apply", async (req, res) => {
     const { application_type, social_media_accounts, website_urls, paypal_email, additional_notes } = req.body;
-    const userId = req.user.id; // middleware ensures req.user
+    const userId = req.user.id; 
 
-    if (!application_type || !paypal_email) {
-        return res.status(400).json({ success: false, message: "Application type and PayPal email are required" });
+    // For Signal requests, we may not need all fields, so we validate based on type
+    if (!application_type) {
+        return res.status(400).json({ success: false, message: "Application type is required" });
+    }
+
+    if (application_type !== 'signal' && !paypal_email) {
+        return res.status(400).json({ success: false, message: "PayPal email is required for advertising applications" });
     }
 
     try {
-        // Insert advertising application
+        // Insert application
         const { data: applicationResult, error: insertError } = await db
             .from('advertising_applications')
             .insert([
                 {
                     user_id: userId,
                     application_type,
-                    social_media_accounts: social_media_accounts,
-                    website_urls: website_urls,
-                    paypal_email,
+                    social_media_accounts: social_media_accounts || {},
+                    website_urls: website_urls || [],
+                    paypal_email: paypal_email || null,
                     status: 'pending',
-                    admin_notes: additional_notes,
+                    admin_notes: additional_notes || '',
                     created_at: new Date(),
                     updated_at: new Date()
                 }
@@ -122,13 +127,16 @@ router.post("/advertising/apply", async (req, res) => {
 
         if (insertError) throw insertError;
 
-        // Update user advertising status
-        const { error: updateError } = await db
-            .from('users')
-            .update({ advertising_status: 'pending' })
-            .eq('id', userId);
-
-        if (updateError) throw updateError;
+        // Update user advertising/signal status (if separate columns existed, we'd use them; otherwise, we rely on application presence)
+        // For Signal, only update generic status if approved, but we'll flag pending for now.
+        const updateData = {};
+        if (application_type === 'signal') {
+            // We could add signal_status column here if feasible, but sticking to existing advertising_status pattern
+            // if we want it separate, but since we rely on application fetch, we don't strictly NEED a column update here.
+        } else {
+             updateData.advertising_status = 'pending';
+             await db.from('users').update(updateData).eq('id', userId);
+        }
 
         // Create admin notification
         const { error: notifyError } = await db
@@ -137,9 +145,9 @@ router.post("/advertising/apply", async (req, res) => {
                 {
                     notification_type: 'application',
                     reference_id: applicationResult[0].id,
-                    title: 'New Advertising Application',
+                    title: application_type === 'signal' ? 'New Signal Access Request' : 'New Advertising Application',
                     message: `User ${req.user.name || 'User'} submitted a ${application_type} application`,
-                    priority: 'normal',
+                    priority: application_type === 'signal' ? 'high' : 'normal',
                     created_at: new Date()
                 }
             ]);
@@ -149,7 +157,7 @@ router.post("/advertising/apply", async (req, res) => {
         // Log user activity
         await db.from('user_activity_logs').insert([{
             user_id: userId,
-            activity_type: 'advertising_application',
+            activity_type: application_type === 'signal' ? 'signal_request' : 'advertising_application',
             details: { application_type, paypal_email },
             ip_address: req.ip || 'unknown',
             user_agent: req.get('User-Agent'),
@@ -158,13 +166,13 @@ router.post("/advertising/apply", async (req, res) => {
 
         res.json({
             success: true,
-            message: "Application submitted successfully. You will receive an email confirmation shortly.",
+            message: "Request submitted successfully. Our team will review it shortly.",
             applicationId: applicationResult[0].id
         });
 
     } catch (err) {
-        logger.error("Advertising application error:", err);
-        res.status(500).json({ success: false, message: "Failed to submit application" });
+        logger.error("Application submission error:", err);
+        res.status(500).json({ success: false, message: "Failed to submit request" });
     }
 });
 

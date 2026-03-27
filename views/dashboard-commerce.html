@@ -8,6 +8,9 @@
     <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet">
     <link rel="stylesheet" href="css/font-awesome.css">
     <link rel="stylesheet" href="css/dashboard.css">
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/dashboard-stats.js"></script>
 </head>
 
 <body class="dashboard-body">
@@ -17,11 +20,12 @@
             <a href="home.html" class="sidebar-brand">Aceos Portal</a>
         </div>
         <ul class="sidebar-nav">
-            <li><a href="dashboard-products.html"><i class="fa fa-th-large"></i> All Products</a></li>
-            <li><a href="dashboard-advertising.html"><i class="fa fa-bullhorn"></i> Advertising</a></li>
-            <li><a href="dashboard-commerce.html" class="active"><i class="fa fa-shopping-cart"></i> Commerce</a></li>
-            <li><a href="dashboard-signal.html"><i class="fa fa-signal"></i> Signal</a></li>
-            <li><a href="home.html"><i class="fa fa-home"></i> Back to Site</a></li>
+            <li><a href="/users/dashboard"><i class="fa fa-th-large"></i> Home</a></li>
+            <li><a href="/dashboard-products.html"><i class="fa fa-th-large"></i> All Products</a></li>
+            <li><a href="/dashboard-advertising.html"><i class="fa fa-bullhorn"></i> Advertising</a></li>
+            <li><a href="/dashboard-commerce.html" class="active"><i class="fa fa-shopping-cart"></i> Commerce</a></li>
+            <li><a href="/dashboard-signal.html"><i class="fa fa-signal"></i> Signal</a></li>
+            <li><a href="/home.html"><i class="fa fa-home"></i> Back to Site</a></li>
         </ul>
     </aside>
 
@@ -29,17 +33,81 @@
         <header class="dashboard-topbar">
             <h2>Commerce</h2>
             <div class="user-menu">
-                <span>Welcome, User</span>
+                <span id="userWelcome">Welcome, User</span>
                 <div class="user-avatar"></div>
             </div>
         </header>
 
         <main class="dashboard-main">
-            <div class="dash-card">
-                <h1 class="page-title">How affiliate marketing works</h1>
-                <p>Get instant access to 50k+ merchants, easily create affiliate links, and run your entire affiliate
-                    business.</p>
-                <a href="javascript:void(0)" onclick="openCommerceWizard()" class="btn-dash">Apply now</a>
+            <!-- Statistics -->
+            <div class="stats-grid">
+                <div class="stat-card earnings">
+                    <i class="fa fa-dollar"></i>
+                    <h4>Total Earnings</h4>
+                    <div class="value" id="stat-earnings">$0.00</div>
+                    <div class="real-time-badge"><div class="pulse-dot"></div> Real-time</div>
+                </div>
+                <div class="stat-card clicks">
+                    <i class="fa fa-mouse-pointer"></i>
+                    <h4>Total Clicks</h4>
+                    <div class="value" id="stat-clicks">0</div>
+                    <div class="real-time-badge"><div class="pulse-dot"></div> Real-time</div>
+                </div>
+                <div class="stat-card campaigns">
+                    <i class="fa fa-bullhorn"></i>
+                    <h4>Active Campaigns</h4>
+                    <div class="value" id="stat-campaigns">0</div>
+                    <div class="real-time-badge">Updated</div>
+                </div>
+                <div class="stat-card applications">
+                    <i class="fa fa-file-text-o"></i>
+                    <h4>Pending Apps</h4>
+                    <div class="value" id="stat-applications">0</div>
+                    <div class="real-time-badge">Pending</div>
+                </div>
+            </div>
+
+            <div id="commerce-status-container" class="dash-card" style="margin-top: 30px; text-align: center; border-top: 5px solid #28a745;">
+                <!-- Default / Inactive View -->
+                <div id="view-inactive">
+                    <h1 class="page-title">Make more. Keep more.</h1>
+                    <p>Get instant access to 50k+ merchants, easily create affiliate links, and run your entire affiliate
+                        business.</p>
+                    <a href="javascript:void(0)" onclick="openCommerceWizard()" class="btn-dash" id="btnApplyCommerce">Apply now</a>
+                </div>
+
+                <!-- Pending View -->
+                <div id="view-pending" style="display: none;">
+                    <i class="fa fa-clock-o" style="font-size: 48px; color: #28a745; margin-bottom: 15px;"></i>
+                    <h2 class="page-title">Commerce Application Pending</h2>
+                    <p>Thank you for completing the onboarding! Our team is currently reviewing your site. You will receive an email notification once your commissions are activated.</p>
+                    <div class="status-badge" style="display: inline-block; background: #e6f7ef; color: #155724; padding: 5px 15px; border-radius: 20px; font-size: 14px; font-weight: bold; border: 1px solid #c3e6cb;">
+                        <i class="fa fa-hourglass-half"></i> Under Site Review
+                    </div>
+                </div>
+
+                <!-- Approved View (Dashboard) -->
+                <div id="view-approved" style="display: none; text-align: left;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 class="page-title" style="margin: 0;">Commerce Console</h2>
+                        <div class="status-badge" style="background: #28a745; color: #fff; padding: 5px 15px; border-radius: 20px; font-size: 14px; font-weight: bold;">
+                            <i class="fa fa-check-circle"></i> Fully Activated
+                        </div>
+                    </div>
+                    <div class="card-grid">
+                        <div class="dash-card" style="background: #f8f9fa;">
+                            <h5><i class="fa fa-link"></i> Link Generator</h5>
+                            <p style="font-size: 12px; color: #666;">Convert any product URL into an affiliate link instantly.</p>
+                            <input type="text" class="form-input" placeholder="Paste product URL here..." style="margin-top: 10px;">
+                            <button class="btn-dash" style="width: 100%; margin-top: 10px;">Generate Link</button>
+                        </div>
+                        <div class="dash-card" style="background: #f8f9fa;">
+                            <h5><i class="fa fa-area-chart"></i> Link Performance</h5>
+                            <p style="font-size: 12px; color: #666;">Track clicks and conversions for your generated links.</p>
+                            <button class="btn-dash" style="width: 100%; margin-top: 10px; background: #666;">View Analytics</button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="card-grid" style="margin-top: 40px; grid-template-columns: repeat(4, 1fr);">
@@ -94,49 +162,119 @@
                 </div>
             </div>
 
-            <!-- Payout Settings -->
-            <div class="dash-card" style="margin-top: 30px; border-left: 5px solid #003087;">
-                <h3><i class="fa fa-paypal" style="color: #003087;"></i> Payout Configuration</h3>
-                <p>Your ad revenue is automatically generated and sent to this PayPal account.</p>
-                <div style="background: #eef2f7; padding: 15px; border-radius: 4px; margin-top: 10px;">
-                    <strong>Active Account:</strong> <span
-                        style="color: #003087; font-weight: bold;">tsumamngindodenis@gmail.com</span>
-                    <span style="float: right; color: green;"><i class="fa fa-check-circle"></i> Verified</span>
+            <div id="approved-content-sections" style="display: none;">
+                <!-- Payout Settings -->
+                <div class="dash-card" style="margin-top: 30px; border-left: 5px solid #003087;">
+                    <h3><i class="fa fa-paypal" style="color: #003087;"></i> Payout Configuration</h3>
+                    <p>Your ad revenue is automatically generated and sent to this PayPal account.</p>
+                    <div style="background: #eef2f7; padding: 15px; border-radius: 44px; margin-top: 10px;">
+                        <strong>Active Account:</strong> <span
+                            style="color: #003087; font-weight: bold;">tsumamngindodenis@gmail.com</span>
+                        <span style="float: right; color: green;"><i class="fa fa-check-circle"></i> Verified</span>
+                    </div>
                 </div>
-            </div>
-
-            <!-- Referral Program -->
-            <div class="dash-card" style="margin-top: 30px; border-left: 5px solid #28a745;">
-                <h3><i class="fa fa-users" style="color: #28a745;"></i> Referral Program</h3>
-                <p>Share your unique link and earn 5% of your referrals' commissions for life.</p>
-                <div style="margin-top: 15px;">
-                    <label style="font-weight:600;">Your Unique Referral Link:</label>
-                    <div style="display:flex; gap:10px; margin-top:5px;">
-                        <input type="text" id="referralLink" readonly
-                            style="flex:1; padding:8px; border:1px solid #ccc; border-radius:4px; color:#555;"
-                            value="Generating...">
-                        <button onclick="copyReferral()" class="btn-dash"
-                            style="margin:0; padding: 8px 15px; background:#28a745;">Copy</button>
+    
+                <!-- Referral Program -->
+                <div class="dash-card" style="margin-top: 30px; border-left: 5px solid #28a745;">
+                    <h3><i class="fa fa-users" style="color: #28a745;"></i> Referral Program</h3>
+                    <p>Share your unique link and earn 5% of your referrals' commissions for life.</p>
+                    <div style="margin-top: 15px;">
+                        <label style="font-weight:600;">Your Unique Referral Link:</label>
+                        <div style="display:flex; gap:10px; margin-top:5px;">
+                            <input type="text" id="referralLink" readonly
+                                style="flex:1; padding:8px; border:1px solid #ccc; border-radius:4px; color:#555;"
+                                value="Generating...">
+                            <button id="btnCopyReferral" onclick="copyReferral()" class="btn-dash"
+                                style="margin:0; padding: 8px 15px; background:#28a745;">Copy</button>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <script>
-                // Generate Unique Referral Link
+                // Stats Update Listener
+        window.addEventListener('aceos_stats_updated', (e) => {
+            const stats = e.detail;
+            if (stats) {
+                if(document.getElementById('stat-earnings')) 
+                    document.getElementById('stat-earnings').innerText = `$${parseFloat(stats.earnings).toFixed(2)}`;
+                if(document.getElementById('stat-clicks'))
+                    document.getElementById('stat-clicks').innerText = stats.totalClicks;
+                if(document.getElementById('stat-campaigns'))
+                    document.getElementById('stat-campaigns').innerText = stats.activeCampaigns;
+                if(document.getElementById('stat-applications'))
+                    document.getElementById('stat-applications').innerText = stats.pendingApplications;
+            }
+        });
+
+        // Check Login & Initialize
                 document.addEventListener('DOMContentLoaded', function () {
-                    var user = localStorage.getItem('aceosUser') || 'guest';
+                    if (!isLoggedIn()) {
+                        window.location.href = 'login.html';
+                        return;
+                    }
+
+                    const welcomeUserSpan = document.getElementById('userWelcome');
+                    if (welcomeUserSpan) welcomeUserSpan.textContent = `Welcome, ${getUsername() || 'User'}`;
+
+                    // Generate Unique Referral Link
+                    var user = getUsername() || 'guest';
+                    var userId = localStorage.getItem('userId') || '000';
                     // Simple "encoding" to make it look like a ref code
-                    var refCode = btoa(user).substring(0, 10).toUpperCase();
-                    var link = window.location.origin + '/home.html?ref=' + refCode;
+                    var refCode = btoa(user + userId).substring(0, 10).toUpperCase();
+                    var link = window.location.origin + '/register.html?ref=' + refCode;
                     document.getElementById('referralLink').value = link;
+
+                    checkCommerceStatus();
                 });
+
+                async function checkCommerceStatus() {
+                    try {
+                        const data = await safeFetch('/api/affiliate/applications');
+                        const apps = data.applications || [];
+                        const commerceApp = apps.find(a => a.application_type === 'commerce');
+
+                        // Hide all views first
+                        document.getElementById('view-inactive').style.display = 'none';
+                        document.getElementById('view-pending').style.display = 'none';
+                        document.getElementById('view-approved').style.display = 'none';
+                        document.getElementById('approved-content-sections').style.display = 'none';
+
+                        if (commerceApp) {
+                            if (commerceApp.status === 'approved') {
+                                document.getElementById('view-approved').style.display = 'block';
+                                document.getElementById('approved-content-sections').style.display = 'block';
+                            } else if (commerceApp.status === 'pending') {
+                                document.getElementById('view-pending').style.display = 'block';
+                            } else {
+                                // Fallback to inactive if status is not recognized or not approved/pending
+                                document.getElementById('view-inactive').style.display = 'block';
+                            }
+                        } else {
+                            // No commerce application found, show inactive view
+                            document.getElementById('view-inactive').style.display = 'block';
+                        }
+                    } catch (err) {
+                        console.warn('Failed to fetch commerce status:', err.message);
+                        // If API call fails, default to inactive view
+                        document.getElementById('view-inactive').style.display = 'block';
+                    }
+                }
 
                 function copyReferral() {
                     var copyText = document.getElementById("referralLink");
                     copyText.select();
                     copyText.setSelectionRange(0, 99999);
                     navigator.clipboard.writeText(copyText.value);
-                    alert("Referral link copied!");
+                    
+                    const btn = document.getElementById('btnCopyReferral');
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '<i class="fa fa-check"></i> Copied!';
+                    showToast("Referral link copied to clipboard!", "success");
+                    
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                    }, 2000);
                 }
             </script>
         </main>
@@ -290,6 +428,10 @@
         var currentPlatform = '';
 
         function openCommerceWizard() {
+            if (!isLoggedIn()) {
+                showToast("Please login to apply.", "warning");
+                return;
+            }
             document.getElementById('commerceModal').style.display = 'block';
             goToStep(1);
         }
@@ -304,19 +446,56 @@
             document.querySelectorAll('.selection-card').forEach(el => el.style.borderColor = '#e0e0e0');
             document.getElementById('card-' + platform).style.borderColor = '#0056b3';
 
-            document.getElementById('urlInputContainer').style.display = 'block';
-            var placeholder = platform === 'social' ? 'e.g. instagram.com/myprofile' : 'e.g. mysite.com';
-            document.getElementById('commerceUrl').placeholder = placeholder;
+            const container = document.getElementById('urlInputContainer');
+            if (container) container.style.display = 'block';
+            
+            const input = document.getElementById('commerceUrl');
+            if (input) {
+                var placeholder = platform === 'social' ? 'e.g. instagram.com/myprofile' : 'e.g. mysite.com';
+                input.placeholder = placeholder;
+            }
         }
 
-        function nextStep(step) {
+        async function nextStep(step) {
             if (step === 2) {
                 var url = document.getElementById('commerceUrl').value;
                 var terms = document.getElementById('commerceTerms').checked;
-                if (!currentPlatform) { alert('Please select a platform.'); return; }
-                if (!url) { alert('Please enter your URL.'); return; }
-                if (!terms) { alert('Please agree to the terms.'); return; }
+                if (!currentPlatform) { showToast('Please select a platform.', 'warning'); return; }
+                if (!url) { showToast('Please enter your URL.', 'warning'); return; }
+                if (!terms) { showToast('Please agree to the terms.', 'warning'); return; }
             }
+            
+            if (step === 5) {
+                // Final step - submit formal application
+                const btn = document.querySelector('#step-5 button');
+                const originalText = btn.innerHTML;
+                setLoading(true, btn, 'Submitting...');
+                
+                try {
+                    const payload = {
+                        application_type: 'commerce',
+                        website_url: document.getElementById('commerceUrl').value,
+                        additional_notes: `Platform: ${currentPlatform}`
+                    };
+
+                    const data = await safeFetch('/api/affiliate/advertising/apply', {
+                        method: 'POST',
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (data.success) {
+                        showToast("Commerce application submitted successfully!", "success");
+                        checkCommerceStatus(); // Refresh UI in background
+                    }
+                } catch (e) {
+                    console.error("Failed to submit commerce application:", e);
+                    showToast("Failed to submit application. Please try again.", "error");
+                } finally {
+                    setLoading(false, btn);
+                    btn.innerHTML = originalText;
+                }
+            }
+            
             goToStep(step);
         }
 
@@ -324,23 +503,32 @@
             // Hide all steps
             document.querySelectorAll('.wizard-step').forEach(el => el.style.display = 'none');
             // Show target step
-            document.getElementById('step-' + step).style.display = 'block';
+            const target = document.getElementById('step-' + step);
+            if (target) target.style.display = 'block';
 
             // Update Progress Bar
             for (var i = 1; i <= 5; i++) {
                 var el = document.getElementById('step-indicator-' + i);
-                el.classList.remove('active', 'completed');
-                if (i < step) el.classList.add('completed');
-                if (i === step) el.classList.add('active');
+                if (el) {
+                    el.classList.remove('active', 'completed');
+                    if (i < step) el.classList.add('completed');
+                    if (i === step) el.classList.add('active');
+                }
             }
         }
 
         function simulateLinkCreation() {
-            document.getElementById('generatedLinkBox').style.display = 'block';
+            setLoading(true, 'btn-create-link', 'Linking...');
+            setTimeout(() => {
+                setLoading(false, 'btn-create-link');
+                document.getElementById('generatedLinkBox').style.display = 'block';
+                showToast("Affiliate link generated!", "success");
+            }, 800);
         }
 
         function simulateClick() {
-            goToStep(5);
+            showToast("Test click detected!", "info");
+            nextStep(5);
         }
 
     </script>
