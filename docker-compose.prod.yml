@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aceos_affiliate_prod
+    ports:
+      - "3000:3000"
+    restart: always # Automatically restart if the Node process crashes or server reboots
+    
+    # Notice: We intentionally do NOT mount volumes in the production yaml.
+    # The container runs strictly from the sealed source code baked into the Dockerfile image.
+    # This prevents local uncommitted changes from accidentally being executed on a live server.
+    
+    # Environment variables should be managed safely by the production server context
+    # Usually you don't use env_file in raw production (but pass them securely via your CI/CD), 
+    # but if self-hosting on a Virtual Private Server (VPS), keeping .env is acceptable.
+    env_file:
+      - .env
