@@ -5,12 +5,189 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aceos Portal - Signal</title>
-    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/font-awesome.css">
     <link rel="stylesheet" href="css/dashboard.css">
     <script src="js/utils.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/dashboard-stats.js"></script>
+    <style>
+        body.dashboard-body { font-family: 'Inter', sans-serif; }
+
+        /* ── Signal Hero Banner ── */
+        .signal-hero {
+            background: linear-gradient(135deg, #1a1200 0%, #2d1f00 50%, #3d2b00 100%);
+            border-radius: 20px;
+            padding: 48px 44px;
+            color: #fff;
+            margin-bottom: 32px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 30px;
+            box-shadow: 0 20px 60px rgba(26,18,0,0.4);
+        }
+        .signal-hero::before {
+            content: '';
+            position: absolute;
+            top: -80px; right: -80px;
+            width: 300px; height: 300px;
+            background: radial-gradient(circle, rgba(255,215,0,0.25) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+        .signal-hero::after {
+            content: '';
+            position: absolute;
+            bottom: -60px; left: 20%;
+            width: 220px; height: 220px;
+            background: radial-gradient(circle, rgba(255,165,0,0.15) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+        .signal-hero-text { position: relative; z-index: 1; flex: 1; }
+        .signal-hero-text .sig-badge {
+            display: inline-flex; align-items: center; gap: 7px;
+            background: rgba(255,215,0,0.15); border: 1px solid rgba(255,215,0,0.35);
+            color: #ffd700; font-size: 11px; font-weight: 700;
+            padding: 4px 12px; border-radius: 20px; margin-bottom: 14px;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .signal-hero-text h1 {
+            font-size: 36px; font-weight: 800;
+            margin: 0 0 12px; line-height: 1.2;
+            background: linear-gradient(135deg, #fff 0%, #ffd700 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .signal-hero-text p {
+            font-size: 15px; color: rgba(255,255,255,0.72);
+            line-height: 1.7; margin: 0 0 24px; max-width: 480px;
+        }
+        .signal-hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+        .btn-signal-primary {
+            background: linear-gradient(135deg, #ffd700, #ffb300);
+            color: #1a1200; border: none; padding: 13px 28px;
+            border-radius: 8px; font-size: 14px; font-weight: 800;
+            cursor: pointer; text-decoration: none;
+            box-shadow: 0 8px 25px rgba(255,215,0,0.4);
+            transition: all 0.3s ease;
+        }
+        .btn-signal-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(255,215,0,0.55); color:#1a1200; }
+        .btn-signal-ghost {
+            background: rgba(255,255,255,0.08);
+            color: #fff; border: 1px solid rgba(255,255,255,0.2);
+            padding: 13px 28px; border-radius: 8px;
+            font-size: 14px; font-weight: 600;
+            cursor: pointer; backdrop-filter: blur(10px);
+            transition: all 0.3s ease; text-decoration: none;
+        }
+        .btn-signal-ghost:hover { background: rgba(255,255,255,0.15); color:#fff; }
+        .signal-hero-kpis {
+            display: flex; flex-direction: column; gap: 14px;
+            position: relative; z-index: 1;
+        }
+        .sig-kpi-pill {
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,215,0,0.2);
+            border-radius: 12px; padding: 14px 20px;
+            text-align: center; min-width: 130px;
+            backdrop-filter: blur(10px);
+        }
+        .sig-kpi-pill .knum { font-size: 26px; font-weight: 800; color: #ffd700; display:block; }
+        .sig-kpi-pill .klbl { font-size: 11px; color: rgba(255,255,255,0.55); text-transform: uppercase; letter-spacing:1px; }
+
+        /* ── Signal Stat Cards ── */
+        .signal-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+        .s-stat-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 24px 22px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+            border: 1px solid rgba(0,0,0,0.04);
+            position: relative; overflow: hidden;
+            transition: all 0.3s cubic-bezier(.165,.84,.44,1);
+        }
+        .s-stat-card:hover { transform: translateY(-6px); box-shadow: 0 16px 40px rgba(0,0,0,0.1); }
+        .s-stat-card .s-icon {
+            width: 46px; height: 46px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; margin-bottom: 16px;
+        }
+        .s-stat-card h4 { margin:0; font-size:11px; font-weight:700; color:#8898aa; text-transform:uppercase; letter-spacing:1px; }
+        .s-stat-card .s-val { font-size:30px; font-weight:800; color:#1a202c; margin:8px 0 6px; }
+        .s-stat-card::after { content:''; position:absolute; bottom:0; left:0; right:0; height:3px; }
+        .s-stat-card.earn::after { background: linear-gradient(90deg,#ffd700,#fff3b0); }
+        .s-stat-card.clicks::after { background: linear-gradient(90deg,#007bff,#66b2ff); }
+        .s-stat-card.camp::after { background: linear-gradient(90deg,#fd7e14,#ffc107); }
+        .s-stat-card.apps::after { background: linear-gradient(90deg,#6f42c1,#b192e8); }
+        .s-stat-card.earn .s-icon { background:#fffde7; color:#f59f00; }
+        .s-stat-card.clicks .s-icon { background:#e7f1ff; color:#007bff; }
+        .s-stat-card.camp .s-icon { background:#fff4e5; color:#fd7e14; }
+        .s-stat-card.apps .s-icon { background:#f0ebff; color:#6f42c1; }
+        .s-rtb { display:inline-flex; align-items:center; gap:5px; font-size:11px;
+            font-weight:600; color:#f59f00; background:#fffde7;
+            padding:2px 8px; border-radius:12px; }
+        .s-pulse { width:6px; height:6px; background:#f59f00;
+            border-radius:50%; animation:pulse 2s infinite; }
+
+        /* ── How it works strip ── */
+        .sig-steps-strip {
+            display: grid; grid-template-columns: repeat(3,1fr);
+            background: #fff; border-radius: 16px;
+            border: 1px solid rgba(0,0,0,0.05);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+            overflow: hidden; margin: 36px 0;
+        }
+        .sig-step {
+            padding: 28px 24px; text-align: center;
+            position: relative; transition: background 0.3s;
+        }
+        .sig-step:not(:last-child)::after {
+            content:'\f054'; font-family:FontAwesome;
+            position:absolute; right:-2px; top:50%;
+            transform:translateY(-50%);
+            color:#d1d5db; font-size:12px; z-index:2;
+        }
+        .sig-step:hover { background:#fffdf5; }
+        .sig-step-num {
+            width:40px; height:40px; border-radius:50%;
+            background: linear-gradient(135deg,#ffd700,#ffb300);
+            color:#1a1200; font-weight:800; font-size:16px;
+            display:flex; align-items:center; justify-content:center;
+            margin:0 auto 12px;
+            box-shadow:0 6px 18px rgba(255,179,0,0.4);
+        }
+        .sig-step h4 { margin:0 0 6px; font-size:14px; font-weight:700; color:#1a202c; }
+        .sig-step p { margin:0; font-size:12px; color:#8898aa; line-height:1.5; }
+
+        /* ── Signal included cards ── */
+        .sig-includes-grid {
+            display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+            gap:18px; margin-top:20px;
+        }
+        .sig-include-card {
+            background:#fff; border-radius:14px; padding:24px;
+            border:1px solid rgba(0,0,0,0.05);
+            box-shadow:0 4px 15px rgba(0,0,0,0.04);
+            transition:all 0.3s ease;
+        }
+        .sig-include-card:hover { transform:translateY(-4px); box-shadow:0 12px 30px rgba(0,0,0,0.08); }
+        .sig-include-card .si-icon {
+            width:42px; height:42px; border-radius:10px;
+            display:flex; align-items:center; justify-content:center;
+            font-size:18px; margin-bottom:14px;
+            background:linear-gradient(135deg,#fffde7,#fff3b0); color:#f59f00;
+        }
+        .sig-include-card h4 { margin:0 0 8px; font-size:14px; font-weight:700; color:#1a202c; }
+        .sig-include-card p { margin:0; font-size:13px; color:#6b7280; line-height:1.6; }
+    </style>
 </head>
 
 <body class="dashboard-body">
@@ -39,122 +216,144 @@
         </header>
 
         <main class="dashboard-main">
-            <!-- Statistics -->
-            <div class="stats-grid">
-                <div class="stat-card earnings">
-                    <i class="fa fa-dollar"></i>
-                    <h4>Total Earnings</h4>
-                    <div class="value" id="stat-earnings">$0.00</div>
-                    <div class="real-time-badge"><div class="pulse-dot"></div> Real-time</div>
+            <!-- Signal Hero Banner -->
+            <div class="signal-hero">
+                <div class="signal-hero-text">
+                    <div class="sig-badge"><i class="fa fa-signal"></i> Signal Intelligence</div>
+                    <h1>One Score.<br>Total Clarity.</h1>
+                    <p>Optimize your ad experiences with the Inventory Score &mdash; a real-time metric that breaks down what&rsquo;s helping or hurting performance so you can act immediately.</p>
+                    <div class="signal-hero-actions">
+                        <a href="javascript:void(0)" onclick="openSignalModal()" class="btn-signal-primary">
+                            <i class="fa fa-unlock-alt"></i> Request Access
+                        </a>
+                        <a href="#sig-included" class="btn-signal-ghost"><i class="fa fa-info-circle"></i> Learn More</a>
+                    </div>
                 </div>
-                <div class="stat-card clicks">
-                    <i class="fa fa-mouse-pointer"></i>
-                    <h4>Total Clicks</h4>
-                    <div class="value" id="stat-clicks">0</div>
-                    <div class="real-time-badge"><div class="pulse-dot"></div> Real-time</div>
-                </div>
-                <div class="stat-card campaigns">
-                    <i class="fa fa-bullhorn"></i>
-                    <h4>Active Campaigns</h4>
-                    <div class="value" id="stat-campaigns">0</div>
-                    <div class="real-time-badge">Updated</div>
-                </div>
-                <div class="stat-card applications">
-                    <i class="fa fa-file-text-o"></i>
-                    <h4>Pending Apps</h4>
-                    <div class="value" id="stat-applications">0</div>
-                    <div class="real-time-badge">Pending</div>
+                <div class="signal-hero-kpis">
+                    <div class="sig-kpi-pill">
+                        <span class="knum">12</span>
+                        <span class="klbl">Key Metrics</span>
+                    </div>
+                    <div class="sig-kpi-pill">
+                        <span class="knum">Real</span>
+                        <span class="klbl">-time Data</span>
+                    </div>
+                    <div class="sig-kpi-pill">
+                        <span class="knum">Free</span>
+                        <span class="klbl">With Prebid</span>
+                    </div>
                 </div>
             </div>
 
-            <div id="signal-status-container" class="dash-card" style="margin-top: 30px; text-align: center; border-top: 5px solid #ffd700;">
+            <!-- Signal Stat Cards -->
+            <div class="signal-stats-grid">
+                <div class="s-stat-card earn">
+                    <div class="s-icon"><i class="fa fa-dollar"></i></div>
+                    <h4>Total Earnings</h4>
+                    <div class="s-val" id="stat-earnings">$0.00</div>
+                    <div class="s-rtb"><div class="s-pulse"></div> Real-time</div>
+                </div>
+                <div class="s-stat-card clicks">
+                    <div class="s-icon"><i class="fa fa-mouse-pointer"></i></div>
+                    <h4>Total Clicks</h4>
+                    <div class="s-val" id="stat-clicks">0</div>
+                    <div class="s-rtb"><div class="s-pulse"></div> Real-time</div>
+                </div>
+                <div class="s-stat-card camp">
+                    <div class="s-icon"><i class="fa fa-bullhorn"></i></div>
+                    <h4>Active Campaigns</h4>
+                    <div class="s-val" id="stat-campaigns">0</div>
+                    <div class="s-rtb">Updated</div>
+                </div>
+                <div class="s-stat-card apps">
+                    <div class="s-icon"><i class="fa fa-file-text-o"></i></div>
+                    <h4>Pending Apps</h4>
+                    <div class="s-val" id="stat-applications">0</div>
+                    <div class="s-rtb">Pending</div>
+                </div>
+            </div>
+
+            <!-- Status Panels (inactive / pending / approved) unchanged -->
+            <div id="signal-status-container" class="dash-card" style="margin-top:0; text-align:center; border-top:5px solid #ffd700;">
                 <!-- Default / Inactive View -->
                 <div id="view-inactive">
                     <h1 class="page-title">One Score. Total Clarity.</h1>
-                    <p>With built-in benchmarks and actionable insights, optimize your ad experiences with the Inventory
-                        Score. A metric that breaks down what's helping or hurting ad performance, so you can improve in
-                        real time.</p>
+                    <p>With built-in benchmarks and actionable insights, optimize your ad experiences with the Inventory Score.</p>
                     <a href="javascript:void(0)" onclick="openSignalModal()" class="btn-dash">Request Access</a>
                 </div>
-
                 <!-- Pending View -->
-                <div id="view-pending" style="display: none;">
-                    <i class="fa fa-clock-o" style="font-size: 48px; color: #ffd700; margin-bottom: 15px;"></i>
+                <div id="view-pending" style="display:none;">
+                    <i class="fa fa-clock-o" style="font-size:48px; color:#ffd700; margin-bottom:15px;"></i>
                     <h2 class="page-title">Request Under Review</h2>
-                    <p>Thank you for your interest in Signal! Our team is currently reviewing your account. You will receive an email notification once your access is approved.</p>
-                    <div class="status-badge" style="display: inline-block; background: #fff3cd; color: #856404; padding: 5px 15px; border-radius: 20px; font-size: 14px; font-weight: bold; border: 1px solid #ffeeba;">
+                    <p>Our team is reviewing your account. You&rsquo;ll receive an email once access is approved.</p>
+                    <div class="status-badge" style="display:inline-block; background:#fff3cd; color:#856404; padding:5px 15px; border-radius:20px; font-size:14px; font-weight:bold; border:1px solid #ffeeba;">
                         <i class="fa fa-hourglass-half"></i> Pending Approval
                     </div>
                 </div>
-
-                <!-- Approved View (Console) -->
-                <div id="view-approved" style="display: none; text-align: left;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h2 class="page-title" style="margin: 0;">Signal Console</h2>
-                        <div class="status-badge" style="background: #d4edda; color: #155724; padding: 5px 15px; border-radius: 20px; font-size: 14px; font-weight: bold; border: 1px solid #c3e6cb;">
+                <!-- Approved View -->
+                <div id="view-approved" style="display:none; text-align:left;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                        <h2 class="page-title" style="margin:0;">Signal Console</h2>
+                        <div class="status-badge" style="background:#d4edda; color:#155724; padding:5px 15px; border-radius:20px; font-size:14px; font-weight:bold; border:1px solid #c3e6cb;">
                             <i class="fa fa-check-circle"></i> Active Access
                         </div>
                     </div>
                     <div class="card-grid">
-                        <div class="dash-card" style="background: #f8f9fa;">
+                        <div class="dash-card" style="background:#f8f9fa;">
                             <h5><i class="fa fa-code"></i> Implementation Tag</h5>
-                            <p style="font-size: 12px; color: #666;">Add this tag to your site's &lt;head&gt; to start measuring.</p>
-                            <code style="display: block; background: #eee; padding: 10px; border-radius: 4px; font-size: 11px; margin-top: 10px;">&lt;script src="https://aceos-affiliate.com/signal/tag.js?id=SIG-<%= typeof user !== 'undefined' ? user.substring(0,5).toUpperCase() : 'USER' %>"&gt;&lt;/script&gt;</code>
+                            <p style="font-size:12px; color:#666;">Add this tag to your site&rsquo;s &lt;head&gt; to start measuring.</p>
+                            <code style="display:block; background:#eee; padding:10px; border-radius:4px; font-size:11px; margin-top:10px;">&lt;script src="https://aceos-affiliate.com/signal/tag.js?id=SIG-USER"&gt;&lt;/script&gt;</code>
                         </div>
-                        <div class="dash-card" style="background: #f8f9fa;">
+                        <div class="dash-card" style="background:#f8f9fa;">
                             <h5><i class="fa fa-line-chart"></i> Real-time Insights</h5>
-                            <p style="font-size: 12px; color: #666;">View detailed attention and viewability metrics.</p>
-                            <button class="btn-dash" style="width: 100%; margin-top: 10px;">Go to Analytics</button>
+                            <p style="font-size:12px; color:#666;">View detailed attention and viewability metrics.</p>
+                            <button class="btn-dash" style="width:100%; margin-top:10px;">Go to Analytics</button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div style="text-align: center; margin: 40px 0;">
-                <h3>How it works</h3>
-            </div>
-
-            <div class="card-grid" style="grid-template-columns: repeat(3, 1fr);">
-                <div style="text-align:center;">
-                    <div
-                        style="background:#ffd700; width:40px; height:40px; border-radius:50%; margin:0 auto 10px; line-height:40px; font-weight:bold;">
-                        1</div>
+            <!-- How it Works Strip -->
+            <div style="text-align:center; margin:40px 0 8px;"><h3 style="font-size:18px; font-weight:700; color:#1a202c;">How it works</h3></div>
+            <div class="sig-steps-strip">
+                <div class="sig-step">
+                    <div class="sig-step-num">1</div>
                     <h4>Measure</h4>
-                    <p style="font-size:13px;">Implement Signal and start measuring your inventory's key performance
-                        indicators.</p>
+                    <p>Implement Signal and start tracking your inventory&rsquo;s key performance indicators in real time.</p>
                 </div>
-                <div style="text-align:center;">
-                    <div
-                        style="background:#ffd700; width:40px; height:40px; border-radius:50%; margin:0 auto 10px; line-height:40px; font-weight:bold;">
-                        2</div>
+                <div class="sig-step">
+                    <div class="sig-step-num">2</div>
                     <h4>Compare</h4>
-                    <p style="font-size:13px;">See how your site stacks up against industry benchmarks.</p>
+                    <p>See how your site stacks up against industry benchmarks across 12 key metrics.</p>
                 </div>
-                <div style="text-align:center;">
-                    <div
-                        style="background:#ffd700; width:40px; height:40px; border-radius:50%; margin:0 auto 10px; line-height:40px; font-weight:bold;">
-                        3</div>
+                <div class="sig-step">
+                    <div class="sig-step-num">3</div>
                     <h4>Optimize</h4>
-                    <p style="font-size:13px;">Uncover actionable insights to drive more value from your supply.</p>
+                    <p>Uncover actionable insights to drive more revenue from your ad supply.</p>
                 </div>
             </div>
 
-            <h3 style="text-align:center; margin-top:50px;">What's included</h3>
-            <div class="card-grid" style="margin-top: 20px;">
-                <div class="dash-card">
-                    <h4><i class="fa fa-eye"></i> Ad quality measurements</h4>
-                    <p>Track your viewability, attention and ads-to-content ratio to benchmark your ad quality.</p>
+            <h3 id="sig-included" style="font-size:18px; font-weight:700; color:#1a202c; margin-bottom:4px;">What&rsquo;s included</h3>
+            <p style="color:#8898aa; font-size:13px; margin-bottom:0;">Fully free with your Aceos Prebid integration.</p>
+            <div class="sig-includes-grid">
+                <div class="sig-include-card">
+                    <div class="si-icon"><i class="fa fa-eye"></i></div>
+                    <h4>Ad Quality Measurements</h4>
+                    <p>Track viewability, attention and ads-to-content ratio to benchmark your ad quality.</p>
                 </div>
-                <div class="dash-card">
-                    <h4><i class="fa fa-bar-chart"></i> Demand analytics</h4>
+                <div class="sig-include-card">
+                    <div class="si-icon" style="background:linear-gradient(135deg,#e7f1ff,#cce4ff); color:#007bff;"><i class="fa fa-bar-chart"></i></div>
+                    <h4>Demand Analytics</h4>
                     <p>Measure and optimize your performance across all of your Prebid partners.</p>
                 </div>
-                <div class="dash-card">
-                    <h4><i class="fa fa-line-chart"></i> Benchmark against Aceos network</h4>
+                <div class="sig-include-card">
+                    <div class="si-icon" style="background:linear-gradient(135deg,#e8faf0,#c3f0d8); color:#28a745;"><i class="fa fa-line-chart"></i></div>
+                    <h4>Benchmark vs Network</h4>
                     <p>See how your performance compares to the market across 12 key metrics.</p>
                 </div>
-                <div class="dash-card">
-                    <h4><i class="fa fa-gift"></i> 100% Free</h4>
+                <div class="sig-include-card">
+                    <div class="si-icon" style="background:linear-gradient(135deg,#f0ebff,#ddd6ff); color:#6f42c1;"><i class="fa fa-gift"></i></div>
+                    <h4>100% Free</h4>
                     <p>Free with your Aceos Prebid integration or with the Signal tag on your page.</p>
                 </div>
             </div>

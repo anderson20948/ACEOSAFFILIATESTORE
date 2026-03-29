@@ -302,16 +302,29 @@
         </div>
 
         <div class="four columns">
-          <div class="dash-card" style="height: 100%; border-left: 4px solid #007bff;">
-            <h4><i class="fa fa-question-circle"></i> Quick Help</h4>
-            <ul style="list-style: none; padding: 0; font-size: 13px;">
-              <li style="margin-bottom: 12px;"><a href="/about.html">How Aceos Works</a></li>
-              <li style="margin-bottom: 12px;"><a href="/contact.html">Support Center</a></li>
-              <li style="margin-bottom: 12px;"><a href="/docs">API Documentation</a></li>
-            </ul>
-            <div style="margin-top: 30px; padding: 15px; background: #f8f9fe; border-radius: 8px;">
-              <p style="font-size: 11px; color: #8898aa; line-height: 1.4;">Need a personalized walkthrough? Our team is available 24/7 to help you optimize your supply.</p>
-              <button class="btn-dash" style="width: 100%; padding: 8px; font-size: 11px;">Chat with Expert</button>
+          <!-- AI Expert Chatbot -->
+          <div class="aceos-chatbot-card" id="expert-chat-panel">
+            <div class="chatbot-header">
+              <div class="chatbot-avatar"><i class="fa fa-robot"></i></div>
+              <div>
+                <div class="chatbot-title">Aceos Expert AI</div>
+                <div class="chatbot-subtitle">Affiliate &amp; Marketing Advisor</div>
+              </div>
+              <span class="chatbot-online-dot" title="Online"></span>
+            </div>
+            <div class="chatbot-messages" id="chatbot-messages">
+              <div class="chat-msg bot">
+                <span>Hi! I&rsquo;m your Aceos expert. Ask me anything about affiliate marketing, business growth, ad strategies, or how to boost your commissions. &#x1F4C8;</span>
+              </div>
+            </div>
+            <div class="chatbot-suggestions" id="chatbot-suggestions">
+              <span class="chip" onclick="sendSuggest(this)">How do I earn more?</span>
+              <span class="chip" onclick="sendSuggest(this)">Best affiliate niches?</span>
+              <span class="chip" onclick="sendSuggest(this)">Explain Signal</span>
+            </div>
+            <div class="chatbot-input-row">
+              <input type="text" id="chatbot-input" placeholder="Ask a marketing question..." onkeydown="if(event.key==='Enter') sendChatMessage()">
+              <button id="chatbot-send-btn" onclick="sendChatMessage()" title="Send"><i class="fa fa-paper-plane"></i></button>
             </div>
           </div>
         </div>
@@ -353,6 +366,105 @@
 
   <!-- Toast Container -->
   <div id="toast-container" class="toast-container"></div>
+
+  <style>
+    /* ── Aceos Expert Chatbot ── */
+    .aceos-chatbot-card {
+      background: #fff;
+      border-radius: 18px;
+      border: 1px solid rgba(0,0,0,0.06);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+      display: flex; flex-direction: column;
+      height: 520px; overflow: hidden;
+    }
+    .chatbot-header {
+      background: linear-gradient(135deg, #0f2027, #2c5364);
+      padding: 16px 18px;
+      display: flex; align-items: center; gap: 12px;
+      border-radius: 18px 18px 0 0;
+      position: relative;
+    }
+    .chatbot-avatar {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: linear-gradient(135deg, #ffd700, #ffb300);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; color: #1a1200; flex-shrink: 0;
+    }
+    .chatbot-title { font-size: 14px; font-weight: 700; color: #fff; }
+    .chatbot-subtitle { font-size: 11px; color: rgba(255,255,255,0.6); }
+    .chatbot-online-dot {
+      width: 9px; height: 9px; background: #28ffa0;
+      border-radius: 50%; position: absolute; right: 18px; top: 18px;
+      box-shadow: 0 0 0 3px rgba(40,255,160,0.2);
+      animation: pulse 2s infinite;
+    }
+    .chatbot-messages {
+      flex: 1; overflow-y: auto; padding: 14px 14px 6px;
+      display: flex; flex-direction: column; gap: 10px;
+      scroll-behavior: smooth;
+    }
+    .chatbot-messages::-webkit-scrollbar { width: 4px; }
+    .chatbot-messages::-webkit-scrollbar-thumb { background: #e1e4e8; border-radius: 4px; }
+    .chat-msg {
+      max-width: 88%; padding: 10px 13px;
+      border-radius: 14px; font-size: 13px; line-height: 1.55;
+      animation: chatIn 0.25s ease-out;
+    }
+    @keyframes chatIn {
+      from { opacity:0; transform:translateY(8px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    .chat-msg.bot {
+      background: #f0f4fb; color: #1a202c;
+      border-bottom-left-radius: 4px; align-self: flex-start;
+    }
+    .chat-msg.user {
+      background: linear-gradient(135deg, #0062cc, #007bff);
+      color: #fff; border-bottom-right-radius: 4px;
+      align-self: flex-end;
+    }
+    .chat-msg.typing span {
+      display:inline-block; width:6px; height:6px;
+      background:#8898aa; border-radius:50%; margin: 0 2px;
+      animation: typingBounce 1.2s infinite;
+    }
+    .chat-msg.typing span:nth-child(2){animation-delay:.2s;}
+    .chat-msg.typing span:nth-child(3){animation-delay:.4s;}
+    @keyframes typingBounce {
+      0%,80%,100%{transform:translateY(0);}
+      40%{transform:translateY(-6px);}
+    }
+    .chatbot-suggestions {
+      padding: 6px 14px 4px;
+      display: flex; flex-wrap: wrap; gap: 6px;
+    }
+    .chip {
+      background: #f0f4fb; border: 1px solid #d1daf5;
+      border-radius: 20px; padding: 4px 11px;
+      font-size: 11px; font-weight: 600; color: #0062cc;
+      cursor: pointer; transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .chip:hover { background: #e7efff; border-color: #0062cc; }
+    .chatbot-input-row {
+      display: flex; gap: 8px;
+      padding: 10px 12px 14px;
+      border-top: 1px solid #f0f2f5;
+    }
+    #chatbot-input {
+      flex: 1; border: 1px solid #e1e4e8; border-radius: 10px;
+      padding: 9px 13px; font-size: 13px; outline: none;
+      transition: border 0.2s;
+    }
+    #chatbot-input:focus { border-color: #007bff; }
+    #chatbot-send-btn {
+      background: linear-gradient(135deg, #0062cc, #007bff);
+      color: #fff; border: none; border-radius: 10px;
+      padding: 9px 14px; cursor: pointer;
+      font-size: 15px; transition: all 0.2s;
+    }
+    #chatbot-send-btn:hover { transform:scale(1.08); }
+  </style>
 
   <script src="/js/utils.js"></script>
   <script src="/js/auth.js"></script>
@@ -516,6 +628,110 @@
     <!-- include Activity Tracker & Stats Engine -->
     <script src="js/activity-tracker.js"></script>
     <script src="js/dashboard-stats.js"></script>
+
+  <script>
+  // ══════════════════════════════════════════════════
+  // Aceos Expert AI Chatbot — Knowledge Base Engine
+  // ══════════════════════════════════════════════════
+  const ACEOS_KB = [
+    { keys: ['earn more','increase earnings','boost income','make money','commission'],
+      ans: `💰 To increase your affiliate earnings:\n• Focus on high-ticket products (>$100 price point)\n• Build email lists — email converts 3-5x better than social\n• Use deep links, not homepage links\n• Apply for Commerce to get 50k+ merchant access\n• Optimize your content for buying-intent keywords` },
+    { keys: ['niche','best niche','what to promote','category','market'],
+      ans: `📊 Top affiliate niches in 2025:\n1. **Finance & Investing** — highest EPC\n2. **Health & Wellness** — evergreen demand\n3. **SaaS & Software** — recurring commissions\n4. **Education & Courses** — high trust, high value\n5. **Home & Garden** — volume plays\n\nPick a niche you can create content for consistently.` },
+    { keys: ['signal','inventory score','viewability','attention data','prebid'],
+      ans: `📡 **Aceos Signal** is a free publisher intelligence tool:\n• Measures viewability, attention, and bid rate in real time\n• Shows your Inventory Score vs. market benchmarks\n• Identifies which ad placements perform best\n• Works with Prebid or a lightweight Signal tag\n\nRequest access from your Signal dashboard tab!` },
+    { keys: ['commerce','affiliate link','link generator','merchant','product link'],
+      ans: `🛒 **Aceos Commerce** gives you:\n• Access to 50,000+ merchants\n• Instant affiliate link generation for any product URL\n• Real-time click and conversion analytics\n• Referral program — earn 5% of your referrals' commissions\n\nApply now from the Commerce tab to get started!` },
+    { keys: ['advertising','ad revenue','cpm','display ads','native ads'],
+      ans: `📢 To maximize ad revenue:\n• Increase viewability above 70% using sticky ad units\n• Use lazy-loading to improve page speed\n• Place ads near high-attention zones (above fold, in-content)\n• Apply for Aceos Advertising to access premium demand partners\n• Monitor impression RPM weekly` },
+    { keys: ['content','article','blog','seo','keyword','traffic'],
+      ans: `✍️ Content strategy for affiliates:\n• Target long-tail buying keywords: "best X for Y in 2025"\n• Write comparison articles — they convert 2-3x better\n• Add product review structured data for rich snippets\n• Update old content — Google rewards freshness\n• 1,500-2,500 words tends to rank best for affiliate terms` },
+    { keys: ['social media','instagram','tiktok','youtube','twitter','facebook','linkedin'],
+      ans: `📱 Social media affiliate tips:\n• **TikTok/Reels**: Short product demos with affiliate links in bio\n• **YouTube**: Long-form reviews with link in description\n• **Instagram**: Story swipe-ups are highest converting\n• **Pinterest**: Great for evergreen product pins\n• **LinkedIn**: Best for B2B/SaaS affiliate programs` },
+    { keys: ['email','email list','newsletter','subscribers','email marketing'],
+      ans: `📧 Email marketing for affiliates:\n• Build your list with a lead magnet (free guide, checklist)\n• Segment by interest — don't blast the same offer to all\n• Use strong subject lines: curiosity + benefit\n• Send 2-4 emails/week max to avoid fatigue\n• Single-product focus emails outperform "newsletter" style` },
+    { keys: ['referral','refer','referral link','tier','mlm'],
+      ans: `👥 Aceos Referral Program:\n• Earn 5% of every referred member's commissions — for life\n• Your unique referral link is in the Commerce dashboard\n• Share on social media, your website, or email\n• No cap on referral earnings\n\nEvery active referral compounds your passive income!` },
+    { keys: ['conversion rate','ctr','click through','optimize','a/b test'],
+      ans: `⚡ Conversion rate optimization tips:\n• Use action-oriented CTA buttons: "Get Deal" > "Click Here"\n• Add urgency: limited time, stock countdowns\n• Show real reviews/proof near affiliate CTAs\n• Use exit-intent popups with special offers\n• Monitor click heatmaps to see where users drop off` },
+    { keys: ['scale','grow','scale business','automate','outsource'],
+      ans: `📈 Scaling your affiliate business:\n1. Automate email sequences with tools like Mailchimp\n2. Outsource content creation once you find what works\n3. Reinvest first 50% of commissions into paid traffic\n4. Build a small team around high-performing content\n5. Diversify across 3-5 affiliate programs to reduce risk` },
+    { keys: ['payout','payment','paypal','withdraw','cashout','when do i get paid'],
+      ans: `💳 Payout info:\n• Aceos payouts are processed to your configured PayPal\n• Minimum payout threshold applies per program\n• Commissions are tracked in real-time in your Commerce console\n• Update your PayPal in Commerce → Payout Configuration\n• Most payouts are monthly (Net-30)` },
+    { keys: ['application','apply','status','pending','approved','rejected'],
+      ans: `📋 Application status guide:\n• **Not Started** — go to the relevant tab and apply\n• **Pending** — our team reviews within 2-5 business days\n• **Approved** — full access unlocked, start earning!\n• **Rejected** — contact support for details\n\nCheck your status overview on this Home dashboard.` },
+    { keys: ['seo','search engine','rank','google','organic traffic'],
+      ans: `🔍 SEO for affiliate sites:\n• Target keywords with commercial intent (vs. informational)\n• Build backlinks via guest posts, HARO, and digital PR\n• Use internal linking to strengthen category pages\n• Core Web Vitals: aim for LCP <2.5s, CLS <0.1\n• Schema markup boosts CTR from search results` },
+    { keys: ['paid traffic','google ads','facebook ads','paid ads','ppc'],
+      ans: `💸 Running paid traffic to affiliate offers:\n• Only run paid ads to offers with proven organic conversion\n• Use broad match + audience signals on Google Performance Max\n• Facebook: video creative outperforms static 3:1\n• Track with UTM parameters — know your ROAS from day 1\n• Start with $20-50/day budgets while testing` },
+    { keys: ['hello','hi','hey','good morning','good afternoon','greetings'],
+      ans: `👋 Hey there! Great to see you on the Aceos dashboard.\n\nI'm your Expert AI, trained in affiliate marketing, ad optimization, and business growth.\n\nAsk me anything — I'm here to help you earn more! 💼` },
+    { keys: ['help','support','contact','issue','problem','bug'],
+      ans: `🆘 Need help?\n• For platform issues: use the Contact page\n• For account questions: email support@aceos.com\n• For technical API help: check /docs\n• For live support: click "Chat with Expert" above\n\nI can also answer most affiliate & marketing questions directly here!` },
+    { keys: ['what is aceos','about aceos','how does aceos work','aceos platform'],
+      ans: `🏢 **Aceos** is a premium affiliate monetization platform:\n\n• **Commerce** — affiliate links to 50k+ merchants\n• **Advertising** — native ad monetization for publishers\n• **Signal** — real-time inventory intelligence\n\nAll three work together to maximize your earnings from content, traffic, and ad inventory.` },
+    { keys: ['trading','forex','crypto','stock','financial markets','investment'],
+      ans: `📊 Affiliate marketing in financial niches:\n• Finance affiliates earn the highest CPAs ($100-$1000/lead)\n• Regulated markets require compliant content (no guarantees)\n• Best platforms: broker affiliate programs, trading app referrals\n• Content angle: education > speculation\n• Build trust with transparent disclosure and reviews` },
+    { keys: ['thank','thanks','awesome','great','helpful','good job'],
+      ans: `😊 You're very welcome! That's what I'm here for.\n\nFeel free to ask anything else — marketing tips, platform questions, or strategy advice. Happy earning! 🚀` },
+  ];
+
+  function getBotResponse(input) {
+    const q = input.toLowerCase().trim();
+    for (const item of ACEOS_KB) {
+      if (item.keys.some(k => q.includes(k))) {
+        return item.ans;
+      }
+    }
+    return `🤔 Good question! For "${input}", I recommend:\n• Check the relevant dashboard section (Commerce, Signal, Advertising)\n• Review the docs at /docs\n• Contact our support team for personalized help\n\nYou can also ask me about: affiliate tips, earning strategies, ad optimization, or any platform feature!`;
+  }
+
+  function appendMsg(text, role) {
+    const box = document.getElementById('chatbot-messages');
+    const div = document.createElement('div');
+    div.className = `chat-msg ${role}`;
+    // Convert **bold** markdown and line breaks
+    div.innerHTML = `<span>${text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>')}</span>`;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+    return div;
+  }
+
+  function showTyping() {
+    const box = document.getElementById('chatbot-messages');
+    const div = document.createElement('div');
+    div.className = 'chat-msg bot typing';
+    div.id = 'typing-indicator';
+    div.innerHTML = '<span></span><span></span><span></span>';
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function removeTyping() {
+    const t = document.getElementById('typing-indicator');
+    if (t) t.remove();
+  }
+
+  function sendChatMessage() {
+    const input = document.getElementById('chatbot-input');
+    const text = (input.value || '').trim();
+    if (!text) return;
+    input.value = '';
+    // Hide suggestions after first message
+    document.getElementById('chatbot-suggestions').style.display = 'none';
+    appendMsg(text, 'user');
+    showTyping();
+    setTimeout(() => {
+      removeTyping();
+      appendMsg(getBotResponse(text), 'bot');
+    }, 700 + Math.random() * 400);
+  }
+
+  function sendSuggest(el) {
+    document.getElementById('chatbot-input').value = el.textContent;
+    sendChatMessage();
+  }
+  </script>
 
 </body>
 

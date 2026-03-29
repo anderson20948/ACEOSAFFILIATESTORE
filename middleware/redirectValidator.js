@@ -3,7 +3,7 @@ const logger = require('../utils/logger');
 // Define the allow-list for redirects
 const ALLOWED_DOMAINS = [
     'localhost:3000',
-    'your-github-username.github.io', // Placeholder for production
+    'https://github.com/anderson20948/ACEOSAFFILIATESTORE', // Placeholder for production
     'aceo.com' // Example brand domain
 ];
 
