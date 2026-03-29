@@ -111,6 +111,11 @@ router.post('/login', async (req, res) => {
         return res.status(400).json({ error: 'Please provide email and password.' });
     }
 
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+        logger.error('Login attempt failed because Supabase is not configured.');
+        return res.status(500).json({ error: 'Authentication service is not configured. Please contact support.' });
+    }
+
     try {
         // Create a query timeout
         const queryTimeout = new Promise((_, reject) =>
@@ -168,7 +173,7 @@ router.post('/login', async (req, res) => {
             username: user.name
         });
     } catch (err) {
-        logger.error('Login error:', { error: err.message });
+        logger.error('Login error:', { error: err.message, stack: err.stack });
         if (err.message === 'Database query timed out') {
             return res.status(503).json({ error: 'The service is temporarily unavailable. Please try again.' });
         }

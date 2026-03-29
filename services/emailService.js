@@ -1,21 +1,9 @@
 // Email Service for sending notifications
 const { db } = require('../dbConfig');
-const nodemailer = require('nodemailer');
 const logger = require('../utils/logger');
 
 class EmailService {
     constructor() {
-        // Initialize Nodemailer transporter
-        this.transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST || 'smtp.gmail.com',
-            port: parseInt(process.env.SMTP_PORT || '587'),
-            secure: process.env.SMTP_PORT === '465', // true for 465, false for other ports
-            auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS
-            }
-        });
-
         this.templates = {
             password_reset: {
                 subject: '🔒 Reset Your Aceos Password',
@@ -172,6 +160,77 @@ class EmailService {
                 `
             },
 
+            support_request: {
+                subject: '🚨 New Support Request Received',
+                html: (data) => `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 10px; overflow: hidden;">
+                        <div style="background: #ff5e14; padding: 20px; text-align: center; color: #fff;">
+                            <h2>New Support Request</h2>
+                        </div>
+                        <div style="padding: 30px; color: #333;">
+                            <p><strong>Ticket ID:</strong> ${data.ticketId}</p>
+                            <p><strong>Name:</strong> ${data.name}</p>
+                            <p><strong>Email:</strong> ${data.email}</p>
+                            <p><strong>Phone:</strong> ${data.phone || 'Not provided'}</p>
+                            <p><strong>Subject:</strong> ${data.subject}</p>
+                            <p><strong>Message:</strong></p>
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0; color: #444;">${data.message}</div>
+                            <p>Please respond to this request and follow up until the issue is resolved.</p>
+                        </div>
+                        <div style="background: #f1f1f1; padding: 15px; text-align: center; font-size: 12px; color: #777;">
+                            Aceos Support System
+                        </div>
+                    </div>
+                `,
+                text: (data) => `
+                    New Support Request
+
+                    Ticket ID: ${data.ticketId}
+                    Name: ${data.name}
+                    Email: ${data.email}
+                    Phone: ${data.phone || 'Not provided'}
+                    Subject: ${data.subject}
+                    Message:
+                    ${data.message}
+
+                    Please respond to this request and follow up until the issue is resolved.
+                `
+            },
+
+            support_confirmation: {
+                subject: '✅ We received your support request',
+                html: (data) => `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 10px; overflow: hidden;">
+                        <div style="background: #007bff; padding: 20px; text-align: center; color: #fff;">
+                            <h2>Support Request Received</h2>
+                        </div>
+                        <div style="padding: 30px; color: #333;">
+                            <p>Hello ${data.userName},</p>
+                            <p>Thank you for contacting Aceos support. We have received your message and a support ticket has been created.</p>
+                            <p><strong>Ticket ID:</strong> ${data.ticketId}</p>
+                            <p>Our support team will follow up with you as soon as possible.</p>
+                            <p>If you have additional details, please reply to this email.</p>
+                        </div>
+                        <div style="background: #f1f1f1; padding: 15px; text-align: center; font-size: 12px; color: #777;">
+                            Aceos Support Team
+                        </div>
+                    </div>
+                `,
+                text: (data) => `
+                    Support Request Received
+
+                    Hello ${data.userName},
+
+                    Thank you for contacting Aceos support. We have received your message and a support ticket has been created.
+
+                    Ticket ID: ${data.ticketId}
+
+                    Our support team will follow up with you as soon as possible.
+
+                    If you have additional details, please reply to this email.
+                `
+            },
+
             welcome_affiliate: {
                 subject: '🎊 Welcome to Aceos Affiliate Program!',
                 html: (data) => `
@@ -228,35 +287,25 @@ class EmailService {
             const html = template.html(templateData);
             const text = template.text ? template.text(templateData) : html.replace(/<[^>]*>?/gm, '');
 
-            const mailOptions = {
-                from: process.env.SMTP_FROM || '"Aceos Team" <info@aceos.com>',
-                to: recipientEmail,
-                subject: template.subject,
-                text: text,
-                html: html
-            };
+            const targetAddresses = Array.isArray(recipientEmail) ? recipientEmail.join(', ') : recipientEmail;
+            logger.info(`Email delivery disabled. Logging email instead for ${targetAddresses}`, { templateKey });
 
-            // Send actual email via Nodemailer
-            let info = await this.transporter.sendMail(mailOptions);
-            logger.info(`Email sent successfully to ${recipientEmail}`, { messageId: info.messageId, templateKey });
-
-            // Store email in database for logging
             const { error: insertError } = await db
                 .from('email_logs')
                 .insert([
                     {
-                        recipient_email: recipientEmail,
+                        recipient_email: targetAddresses,
                         recipient_name: recipientName,
                         subject: template.subject,
                         email_type: templateKey,
-                        status: 'sent',
+                        status: 'disabled',
                         sent_at: new Date()
                     }
                 ]);
 
-            if (insertError) logger.error('Error logging email to DB', { error: insertError.message, recipientEmail });
+            if (insertError) logger.error('Error logging disabled email to DB', { error: insertError.message, recipientEmail });
 
-            return { success: true, messageId: info.messageId };
+            return { success: true, messageId: null };
 
         } catch (error) {
             logger.error('Error sending email', { error: error.message, recipientEmail, templateKey });
@@ -311,6 +360,26 @@ class EmailService {
             userName,
             amount: parseFloat(amount).toFixed(2),
             transactionId
+        });
+    }
+
+    // Send new support request email to admin recipients
+    async sendSupportRequest(adminEmailList, formData) {
+        return this.sendEmail(adminEmailList, 'Support Team', 'support_request', {
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            subject: formData.subject,
+            message: formData.message,
+            ticketId: formData.ticketId
+        });
+    }
+
+    // Send confirmation email back to the user
+    async sendSupportConfirmation(userEmail, userName, ticketId) {
+        return this.sendEmail(userEmail, userName, 'support_confirmation', {
+            userName,
+            ticketId
         });
     }
 

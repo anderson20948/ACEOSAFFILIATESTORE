@@ -47,6 +47,8 @@ const ADMIN_USERS = [
   }
 ];
 
+const ADMIN_EMAILS = process.env.ADMIN_EMAILS || 'tsumamngindodenis@gmail.com,malomoanderson@gmail.com';
+
 function isSuperAdmin(user) {
   if (!user) return false;
   return user.role === 'admin';

@@ -7,24 +7,24 @@ const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error("CRITICAL: SUPABASE_URL or SUPABASE_ANON_KEY is missing from environment variables.");
   
-  // Provide a developer-friendly dummy client that logs helpful messages instead of crashing
+  const makeMissingResponse = () => ({ data: null, error: { message: "Supabase environment variables missing" } });
+  const logMissing = (table) => {
+    console.error(`ERROR: Attempted to access table '${table}' but Supabase is NOT configured.`);
+    return Promise.resolve(makeMissingResponse());
+  };
+
   const mockClient = {
     from: (table) => {
-      const logMissing = () => {
-        console.error(`ERROR: Attempted to access table '${table}' but Supabase is NOT configured.`);
-        return { data: null, error: { message: "Supabase environment variables missing" } };
-      };
-      
       const chainable = {
-        select: logMissing,
-        insert: logMissing,
-        update: logMissing,
-        delete: logMissing,
+        select: () => logMissing(table),
+        insert: () => logMissing(table),
+        update: () => logMissing(table),
+        delete: () => logMissing(table),
         eq: () => chainable,
-        single: logMissing,
+        single: () => logMissing(table),
         order: () => chainable,
         limit: () => chainable,
-        then: (cb) => Promise.resolve(logMissing()).then(cb)
+        then: (cb) => Promise.resolve(makeMissingResponse()).then(cb)
       };
       return chainable;
     },
