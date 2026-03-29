@@ -280,23 +280,25 @@ app.use("/api/auth/register", authLimiter); // Apply stricter limit to register
 app.use("/api/auth/forgot-password", emailLimiter); // Apply stricter limit to email attempts
 app.use("/api/auth/reset-password", emailLimiter); // Apply stricter limit to email attempts
 
+// CRITICAL: Body parsers MUST be registered before any routes so req.body is populated
+app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
 app.set("view engine", "ejs");
 app.use(cookieParser());
 
-// Trust Vercel's proxy properly so secure secure cookies work over HTTPS
+// Trust Vercel's proxy properly so secure cookies work over HTTPS
 app.set("trust proxy", 1);
 
 app.use(
-
   session({
-    secret: process.env.SESSION_SECRET,
+    secret: process.env.SESSION_SECRET || 'aceos-fallback-session-secret-key-12345',
     resave: false,
     saveUninitialized: false,
     cookie: {
-      httpOnly: true, // Prevent XSS from reading the cookie
-      secure: process.env.NODE_ENV === 'production', // true for HTTPS
-      sameSite: 'lax', // Basic CSRF protection
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 24 * 60 * 60 * 1000 // 24 hours
     }
   })
@@ -304,12 +306,13 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(flash());
+app.use(logAction);
 
 // Static file serving with caching
 const cacheOptions = {
   maxAge: '1d',
-  setHeaders: (res, path) => {
-    if (path.endsWith('.html')) {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) {
       res.setHeader('Cache-Control', 'no-cache');
     }
   }
@@ -321,7 +324,6 @@ app.use("/css", express.static(path.join(__dirname, "css"), cacheOptions));
 app.use("/images", express.static(path.join(__dirname, "images"), cacheOptions));
 app.use("/fonts", express.static(path.join(__dirname, "fonts"), cacheOptions));
 app.use(express.static(path.join(__dirname, "users"), cacheOptions));
-app.use(express.json());
 
 // Mount API routes
 const authRouter = require('./routes/auth');
@@ -341,7 +343,6 @@ app.use('/api/paypal', paypalRouter);
 app.use('/api/advertising', advertisingRouter);
 app.use('/api/tracking', trackingRouter);
 app.use('/api/profile', profileRouter);
-app.use(logAction);
 
 // Static serving for profile uploads
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
@@ -470,11 +471,8 @@ app.get("/auth/google/callback",
   }
 );
 
-// --- AJAX / API Endpoints for Dashboard ---
-app.use("/api/auth", require("./routes/auth"));
-
-// (Many /api/admin routes moved to routes/admin.js)
-// API Auth routes are now entirely handled by routes/auth.js
+// API Auth and Admin routes are handled by the routers mounted above.
+// (Duplicate registrations removed — do not re-add require() calls here)
 
 // Contact Form Endpoint
 app.post("/api/contact", async (req, res) => {
@@ -573,20 +571,23 @@ function ensureAuthenticated(req, res, next) {
   }
 }
 
-// Register Products Route
-app.use("/api/products", require("./routes/products"));
-
-// Register Admin, Affiliate and Advertising Routes
-app.use("/api/admin", require("./routes/admin"));
-app.use("/api/affiliate", require("./routes/affiliate"));
-app.use("/api/ads", require("./routes/advertising"));
-app.use("/t", require("./routes/tracking"));
-
 if (require.main === module) {
   app.listen(PORT, '0.0.0.0', () => {
     logger.info(`Server running on http://0.0.0.0:${PORT}`);
   });
 }
 
+// Global Error Handler — MUST be the very last middleware.
+// Ensures all unhandled errors return JSON for API/AJAX calls, never HTML.
+app.use((err, req, res, next) => {
+  logger.error("Unhandled Exception:", { error: err.message, stack: err.stack });
+  const isApiRequest = req.path.startsWith('/api/') ||
+                       req.xhr ||
+                       (req.headers.accept && req.headers.accept.includes('application/json'));
+  if (isApiRequest) {
+    return res.status(500).json({ error: "An unexpected internal server error occurred." });
+  }
+  res.status(500).send("Internal Server Error");
+});
+
 module.exports = app;
-// module.exports = app;

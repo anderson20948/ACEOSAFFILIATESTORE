@@ -176,6 +176,36 @@ router.post('/login', async (req, res) => {
     }
 });
 
+// Profile info for authenticated users
+router.get('/profile', async (req, res) => {
+    const token = req.cookies.token || req.headers.authorization?.split(' ')[1];
+
+    if (req.isAuthenticated && req.isAuthenticated()) {
+        return res.json({
+            id: req.user.id,
+            email: req.user.email,
+            name: req.user.name,
+            role: req.user.role || 'affiliate'
+        });
+    }
+
+    if (!token) {
+        return res.status(401).json({ error: 'Authentication required.' });
+    }
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        return res.json({
+            id: decoded.id,
+            email: decoded.email,
+            name: decoded.name,
+            role: decoded.role || 'affiliate'
+        });
+    } catch (err) {
+        return res.status(401).json({ error: 'Session expired or invalid token.' });
+    }
+});
+
 // Forgot Password - Step 1: Request Code
 router.post('/forgot-password', async (req, res) => {
     const { email } = req.body;
