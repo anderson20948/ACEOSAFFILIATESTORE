@@ -1,30 +1,12 @@
 const express = require('express');
-const router = express.Router();
+const { wrapRouter } = require('../middleware/asyncHandler');
+const { ensureApiAuthenticated } = require('../middleware/auth');
+const router = wrapRouter(express.Router());
 const { db } = require('../dbConfig');
 const logger = require('../utils/logger');
 const { v4: uuidv4 } = require('uuid');
 
-// Middleware to verify token (Supports both Token and Session)
-const verifyToken = (req, res, next) => {
-    // 1. Check Passport Session first
-    if (req.isAuthenticated()) {
-        return next();
-    }
-
-    // 2. Fallback to Token verification
-    const token = req.cookies.token || req.headers.authorization?.split(' ')[1];
-    if (!token) return res.status(401).json({ error: 'Unauthorized' });
-
-    try {
-        const decoded = require('jsonwebtoken').verify(token, process.env.JWT_SECRET);
-        req.user = decoded;
-        next();
-    } catch (err) {
-        res.status(403).json({ error: 'Invalid token' });
-    }
-};
-
-router.use(verifyToken);
+router.use(ensureApiAuthenticated);
 
 // --- Dashboard & Stats Routes ---
 

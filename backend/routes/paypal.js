@@ -1,5 +1,6 @@
 const express = require('express');
-const router = express.Router();
+const { wrapRouter } = require('../middleware/asyncHandler');
+const router = wrapRouter(express.Router());
 const paypal = require('@paypal/checkout-server-sdk');
 const { client, MERCHANT_CONFIG } = require('../paypalConfig');
 const { db } = require('../dbConfig');

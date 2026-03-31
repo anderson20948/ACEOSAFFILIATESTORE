@@ -1,5 +1,6 @@
 const express = require('express');
-const router = express.Router();
+const { wrapRouter } = require('../middleware/asyncHandler');
+const router = wrapRouter(express.Router());
 const multer = require('multer');
 const path = require('path');
 const { db } = require('../dbConfig');

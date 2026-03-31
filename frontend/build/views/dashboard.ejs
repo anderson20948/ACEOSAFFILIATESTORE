@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+  <title>Dashboard</title>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aceos Portal - Dashboard</title>
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet">
+  <link rel="stylesheet" href="/css/font-awesome.css">
+  <link rel="stylesheet" href="/css/dashboard.css">
+  <style>
+    /* Toast Notification Styles */
+    .toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 9999;
+    }
+
+    .toast {
+      background: #333;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    .toast.success {
+      background: #28a745;
+    }
+
+    .toast.error {
+      background: #dc3545;
+    }
+
+    .toast.info {
+      background: #17a2b8;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    /* Stats Grid Styles */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 25px;
+      margin-bottom: 40px;
+    }
+    
+    .stat-card {
+      background: #fff;
+      padding: 30px 25px;
+      border-radius: 16px;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+      text-align: left;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(0,0,0,0.03);
+    }
+    
+    .stat-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+    }
+    
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+    }
+    
+    .stat-card.earnings::before { background: linear-gradient(90deg, #28a745, #85e09b); }
+    .stat-card.clicks::before { background: linear-gradient(90deg, #007bff, #66b2ff); }
+    .stat-card.campaigns::before { background: linear-gradient(90deg, #ffc107, #ffe082); }
+    .stat-card.applications::before { background: linear-gradient(90deg, #6f42c1, #a389d4); }
+    
+    .stat-card h4 {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 700;
+      color: #8898aa;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .stat-card .value {
+      font-size: 32px;
+      font-weight: 800;
+      margin: 15px 0 5px 0;
+      color: #32325d;
+    }
+    
+    .stat-card i {
+      font-size: 20px;
+      float: right;
+      opacity: 0.2;
+      position: absolute;
+      right: 25px;
+      top: 25px;
+    }
+    
+    .real-time-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #24b47e;
+      background: #e6f7ef;
+      padding: 2px 8px;
+      border-radius: 12px;
+      margin-top: 5px;
+    }
+    
+    .pulse-dot {
+      width: 6px;
+      height: 6px;
+      background: #24b47e;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(36, 180, 126, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(36, 180, 126, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(36, 180, 126, 0); }
+    }
+
+    .status-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
+      text-transform: uppercase;
+    }
+    .status-active { background: #d4edda; color: #155724; }
+    .status-pending { background: #fff3cd; color: #856404; }
+    .status-none { background: #e9ecef; color: #6c757d; }
+
+    .service-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 20px;
+      background: #fff;
+      border-radius: 12px;
+      margin-bottom: 15px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+      border: 1px solid rgba(0,0,0,0.05);
+      transition: all 0.2s ease;
+      text-decoration: none;
+      color: inherit;
+    }
+    .service-card:hover {
+      transform: translateX(5px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.05);
+      border-color: #007bff44;
+    }
+    .service-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 15px;
+    }
+  </style>
+</head>
+
+<body class="dashboard-body">
+
+  <!-- Sidebar -->
+  <aside id="dashboard-sidebar">
+    <div class="sidebar-header">
+      <a href="home.html" class="sidebar-brand">Aceos Portal</a>
+    </div>
+    <ul class="sidebar-nav">
+      <li><a href="/users/dashboard" class="active"><i class="fa fa-th-large"></i> Home</a></li>
+      <li><a href="/dashboard-advertising.html"><i class="fa fa-bullhorn"></i> Advertising</a></li>
+      <li><a href="/dashboard-commerce.html"><i class="fa fa-shopping-cart"></i> Commerce</a></li>
+      <li><a href="/dashboard-signal.html"><i class="fa fa-signal"></i> Signal</a></li>
+      <li><a href="#" onclick="showSection('profile')"><i class="fa fa-user"></i> Profile Settings</a></li>
+      <li><a href="/home.html"><i class="fa fa-home"></i> Back to Site</a></li>
+    </ul>
+  </aside>
+
+  <!-- Main Content -->
+  <div id="dashboard-content">
+    <!-- Topbar -->
+    <header class="dashboard-topbar">
+      <h2>Welcome to Aceos</h2>
+      <div class="user-menu" onclick="showSection('profile')" style="cursor: pointer;">
+        <span id="welcome-user">Welcome, <%= user %></span>
+        <div class="user-avatar" id="topbar-avatar" style="background-size: cover; background-position: center;"></div>
+      </div>
+    </header>
+
+    <!-- Main View -->
+    <main class="dashboard-main">
+      <div class="stats-grid">
+        <div class="stat-card earnings">
+          <i class="fa fa-dollar"></i>
+          <h4>Total Earnings</h4>
+          <div class="value" id="stat-earnings">$0.00</div>
+          <div class="real-time-badge"><div class="pulse-dot"></div> Real-time</div>
+        </div>
+        <div class="stat-card clicks">
+          <i class="fa fa-mouse-pointer"></i>
+          <h4>Total Clicks</h4>
+          <div class="value" id="stat-clicks">0</div>
+          <div class="real-time-badge"><div class="pulse-dot"></div> Real-time</div>
+        </div>
+        <div class="stat-card campaigns">
+          <i class="fa fa-bullhorn"></i>
+          <h4>Active Campaigns</h4>
+          <div class="value" id="stat-campaigns">0</div>
+          <div class="real-time-badge">Updated</div>
+        </div>
+        <div class="stat-card applications">
+          <i class="fa fa-file-text-o"></i>
+          <h4>Pending Apps</h4>
+          <div class="value" id="stat-applications">0</div>
+          <div class="real-time-badge">Pending</div>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top: 20px;">
+        <div class="eight columns">
+          <div class="dash-card">
+            <h3><i class="fa fa-server"></i> Service Status Overview</h3>
+            <p style="margin-bottom: 20px;">Track your access and approval status for Aceos premium services.</p>
+            
+            <div id="service-status-list">
+              <a href="/dashboard-advertising.html" class="service-card" id="status-card-advertising">
+                <div style="display: flex; align-items: center;">
+                  <div class="service-icon" style="background: #e7f1ff; color: #007bff;"><i class="fa fa-bullhorn"></i></div>
+                  <div>
+                    <div style="font-weight: 700; font-size: 14px;">Advertising Services</div>
+                    <div style="font-size: 12px; color: #8898aa;">Native ad monetization</div>
+                  </div>
+                </div>
+                <span class="status-badge status-none" id="badge-advertising">Checking...</span>
+              </a>
+
+              <a href="/dashboard-commerce.html" class="service-card" id="status-card-commerce">
+                <div style="display: flex; align-items: center;">
+                  <div class="service-icon" style="background: #e6f7ef; color: #28a745;"><i class="fa fa-shopping-cart"></i></div>
+                  <div>
+                    <div style="font-weight: 700; font-size: 14px;">Commerce Integration</div>
+                    <div style="font-size: 12px; color: #8898aa;">Affiliate & supply chain</div>
+                  </div>
+                </div>
+                <span class="status-badge status-none" id="badge-commerce">Checking...</span>
+              </a>
+
+              <a href="/dashboard-signal.html" class="service-card" id="status-card-signal">
+                <div style="display: flex; align-items: center;">
+                  <div class="service-icon" style="background: #fff8e1; color: #ffc107;"><i class="fa fa-signal"></i></div>
+                  <div>
+                    <div style="font-weight: 700; font-size: 14px;">Signal Console</div>
+                    <div style="font-size: 12px; color: #8898aa;">Real-time attention data</div>
+                  </div>
+                </div>
+                <span class="status-badge status-none" id="badge-signal">Checking...</span>
+              </a>
+            </div>
+          </div>
+
+          <div class="dash-card" style="margin-top: 30px;">
+            <h3><i class="fa fa-line-chart"></i> Recent Activity</h3>
+            <p>Operational tracking of your latest interactions.</p>
+            <div id="user-reports-list" style="margin-top: 15px; font-size: 14px;">
+              <p>Loading activity reports...</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="four columns">
+          <!-- AI Expert Chatbot -->
+          <div class="aceos-chatbot-card" id="expert-chat-panel">
+            <div class="chatbot-header">
+              <div class="chatbot-avatar"><i class="fa fa-robot"></i></div>
+              <div>
+                <div class="chatbot-title">Aceos Expert AI</div>
+                <div class="chatbot-subtitle">Affiliate &amp; Marketing Advisor</div>
+              </div>
+              <span class="chatbot-online-dot" title="Online"></span>
+            </div>
+            <div class="chatbot-messages" id="chatbot-messages">
+              <div class="chat-msg bot">
+                <span>Hi! I&rsquo;m your Aceos expert. Ask me anything about affiliate marketing, business growth, ad strategies, or how to boost your commissions. &#x1F4C8;</span>
+              </div>
+            </div>
+            <div class="chatbot-suggestions" id="chatbot-suggestions">
+              <span class="chip" onclick="sendSuggest(this)">How do I earn more?</span>
+              <span class="chip" onclick="sendSuggest(this)">Best affiliate niches?</span>
+              <span class="chip" onclick="sendSuggest(this)">Explain Signal</span>
+            </div>
+            <div class="chatbot-input-row">
+              <input type="text" id="chatbot-input" placeholder="Ask a marketing question..." onkeydown="if(event.key==='Enter') sendChatMessage()">
+              <button id="chatbot-send-btn" onclick="sendChatMessage()" title="Send"><i class="fa fa-paper-plane"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      </div>
+
+      <!-- Profile Settings Section (Hidden by default) -->
+      <div id="section-profile" style="display: none;" class="fade-in">
+        <div class="dash-card">
+          <h3><i class="fa fa-user-circle"></i> Profile Settings</h3>
+          <p>Personalize your dashboard experience and update your account details.</p>
+          
+          <div class="row" style="margin-top: 30px;">
+            <div class="four columns" style="text-align: center;">
+              <div id="profile-preview" style="width: 150px; height: 150px; border-radius: 50%; background: #eee; margin: 0 auto 20px; background-size: cover; background-position: center; border: 3px solid #007bff;"></div>
+              <button class="btn-dash" onclick="document.getElementById('avatar-input').click()">
+                <i class="fa fa-camera"></i> Change Photo
+              </button>
+              <input type="file" id="avatar-input" style="display: none;" accept="image/*" onchange="uploadAvatar(this)">
+            </div>
+            <div class="eight columns">
+              <form id="profile-form">
+                <div class="form-group">
+                  <label>Full Name</label>
+                  <input type="text" id="profile-name" class="u-full-width" readonly>
+                  <small style="color: #888;">Name updates are currently restricted. Contact support to change.</small>
+                </div>
+                <div class="form-group">
+                  <label>Email Address</label>
+                  <input type="email" id="profile-email" class="u-full-width" readonly>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <style>
+    /* ── Aceos Expert Chatbot ── */
+    .aceos-chatbot-card {
+      background: #fff;
+      border-radius: 18px;
+      border: 1px solid rgba(0,0,0,0.06);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+      display: flex; flex-direction: column;
+      height: 520px; overflow: hidden;
+    }
+    .chatbot-header {
+      background: linear-gradient(135deg, #0f2027, #2c5364);
+      padding: 16px 18px;
+      display: flex; align-items: center; gap: 12px;
+      border-radius: 18px 18px 0 0;
+      position: relative;
+    }
+    .chatbot-avatar {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: linear-gradient(135deg, #ffd700, #ffb300);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; color: #1a1200; flex-shrink: 0;
+    }
+    .chatbot-title { font-size: 14px; font-weight: 700; color: #fff; }
+    .chatbot-subtitle { font-size: 11px; color: rgba(255,255,255,0.6); }
+    .chatbot-online-dot {
+      width: 9px; height: 9px; background: #28ffa0;
+      border-radius: 50%; position: absolute; right: 18px; top: 18px;
+      box-shadow: 0 0 0 3px rgba(40,255,160,0.2);
+      animation: pulse 2s infinite;
+    }
+    .chatbot-messages {
+      flex: 1; overflow-y: auto; padding: 14px 14px 6px;
+      display: flex; flex-direction: column; gap: 10px;
+      scroll-behavior: smooth;
+    }
+    .chatbot-messages::-webkit-scrollbar { width: 4px; }
+    .chatbot-messages::-webkit-scrollbar-thumb { background: #e1e4e8; border-radius: 4px; }
+    .chat-msg {
+      max-width: 88%; padding: 10px 13px;
+      border-radius: 14px; font-size: 13px; line-height: 1.55;
+      animation: chatIn 0.25s ease-out;
+    }
+    @keyframes chatIn {
+      from { opacity:0; transform:translateY(8px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    .chat-msg.bot {
+      background: #f0f4fb; color: #1a202c;
+      border-bottom-left-radius: 4px; align-self: flex-start;
+    }
+    .chat-msg.user {
+      background: linear-gradient(135deg, #0062cc, #007bff);
+      color: #fff; border-bottom-right-radius: 4px;
+      align-self: flex-end;
+    }
+    .chat-msg.typing span {
+      display:inline-block; width:6px; height:6px;
+      background:#8898aa; border-radius:50%; margin: 0 2px;
+      animation: typingBounce 1.2s infinite;
+    }
+    .chat-msg.typing span:nth-child(2){animation-delay:.2s;}
+    .chat-msg.typing span:nth-child(3){animation-delay:.4s;}
+    @keyframes typingBounce {
+      0%,80%,100%{transform:translateY(0);}
+      40%{transform:translateY(-6px);}
+    }
+    .chatbot-suggestions {
+      padding: 6px 14px 4px;
+      display: flex; flex-wrap: wrap; gap: 6px;
+    }
+    .chip {
+      background: #f0f4fb; border: 1px solid #d1daf5;
+      border-radius: 20px; padding: 4px 11px;
+      font-size: 11px; font-weight: 600; color: #0062cc;
+      cursor: pointer; transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .chip:hover { background: #e7efff; border-color: #0062cc; }
+    .chatbot-input-row {
+      display: flex; gap: 8px;
+      padding: 10px 12px 14px;
+      border-top: 1px solid #f0f2f5;
+    }
+    #chatbot-input {
+      flex: 1; border: 1px solid #e1e4e8; border-radius: 10px;
+      padding: 9px 13px; font-size: 13px; outline: none;
+      transition: border 0.2s;
+    }
+    #chatbot-input:focus { border-color: #007bff; }
+    #chatbot-send-btn {
+      background: linear-gradient(135deg, #0062cc, #007bff);
+      color: #fff; border: none; border-radius: 10px;
+      padding: 9px 14px; cursor: pointer;
+      font-size: 15px; transition: all 0.2s;
+    }
+    #chatbot-send-btn:hover { transform:scale(1.08); }
+  </style>
+
+  <script src="/js/utils.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/dashboard-stats.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!isLoggedIn()) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      const user = getUsername();
+      if (user) {
+        document.getElementById('welcome-user').innerText = `Welcome, ${user}`;
+      }
+
+      if (getUserRole() === 'admin') {
+        const sidebar = document.querySelector('.sidebar-nav');
+        const li = document.createElement('li');
+        li.innerHTML = '<a href="admin.html"><i class="fa fa-lock"></i> Admin Panel</a>';
+        sidebar.appendChild(li);
+      }
+
+      // Check for success messages in URL
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has('login')) {
+        showToast('Login successful! Welcome back.', 'success');
+      }
+
+      // Update Stats UI from event
+      window.addEventListener('aceos_stats_updated', (e) => {
+        const stats = e.detail;
+        if (stats) {
+          document.getElementById('stat-earnings').innerText = `$${parseFloat(stats.earnings).toFixed(2)}`;
+          document.getElementById('stat-clicks').innerText = stats.totalClicks;
+          document.getElementById('stat-campaigns').innerText = stats.activeCampaigns;
+          document.getElementById('stat-applications').innerText = stats.pendingApplications;
+        }
+      });
+
+      // Load User Reports
+
+      // Load User Reports
+      async function loadUserReports() {
+        try {
+          const reports = await safeFetch('/api/user/activities');
+          const list = document.getElementById('user-reports-list');
+          if (!reports || reports.length === 0) {
+            list.innerHTML = '<p style="color: #888;">No recent reports found.</p>';
+            return;
+          }
+          list.innerHTML = reports.map(r => `
+            <div style="padding: 10px; border-bottom: 1px solid #eee;">
+              <i class="fa fa-info-circle"></i> ${r.message} 
+              <small style="float: right; color: #999;">${new Date(r.created_at).toLocaleDateString()}</small>
+            </div>
+          `).join('');
+        } catch (err) {
+          document.getElementById('user-reports-list').innerHTML = '<p>Error loading reports.</p>';
+        }
+      }
+
+      // Load Service Statuses
+      async function loadServiceStatuses() {
+        try {
+          const data = await safeFetch('/api/affiliate/applications');
+          const apps = data.applications || [];
+          
+          const services = ['advertising', 'commerce', 'signal'];
+          services.forEach(type => {
+            const app = apps.find(a => a.application_type === type);
+            const badge = document.getElementById(`badge-${type}`);
+            if (!badge) return;
+
+            if (app) {
+              badge.textContent = app.status.toUpperCase();
+              badge.className = `status-badge status-${app.status === 'approved' ? 'active' : 'pending'}`;
+            } else {
+              badge.textContent = 'NOT STARTED';
+              badge.className = 'status-badge status-none';
+            }
+          });
+        } catch (err) {
+          console.warn('Failed to load service statuses');
+        }
+      }
+
+      // Initial loads
+      loadUserReports();
+      loadServiceStatuses();
+      loadUserProfile();
+    });
+
+    function showSection(sectionId) {
+        const sections = ['profile'];
+        const mainView = document.querySelector('.stats-grid').parentElement;
+        
+        if (sectionId === 'profile') {
+            document.querySelector('.stats-grid').style.display = 'none';
+            document.querySelector('.row').style.display = 'none';
+            document.getElementById('section-profile').style.display = 'block';
+        } else {
+            document.querySelector('.stats-grid').style.display = 'grid';
+            document.querySelector('.row').style.display = 'flex';
+            document.getElementById('section-profile').style.display = 'none';
+        }
+    }
+
+    async function loadUserProfile() {
+        try {
+            const user = await safeFetch('/api/auth/profile');
+            if (user) {
+                document.getElementById('profile-name').value = user.name;
+                document.getElementById('profile-email').value = user.email;
+                
+                if (user.profile_picture_url) {
+                    const url = user.profile_picture_url;
+                    document.getElementById('topbar-avatar').style.backgroundImage = `url(${url})`;
+                    document.getElementById('profile-preview').style.backgroundImage = `url(${url})`;
+                }
+            }
+        } catch (err) {
+            console.error('Error loading profile:', err);
+        }
+    }
+
+    async function uploadAvatar(input) {
+        if (!input.files || !input.files[0]) return;
+        
+        const formData = new FormData();
+        formData.append('avatar', input.files[0]);
+        
+        showToast('Uploading profile picture...', 'info');
+        
+        try {
+            const response = await fetch('/api/profile/upload-avatar', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    // Note: Don't set Content-Type, browser does it with boundary for FormData
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showToast('Profile picture updated!', 'success');
+                const url = result.imageUrl;
+                document.getElementById('topbar-avatar').style.backgroundImage = `url(${url})`;
+                document.getElementById('profile-preview').style.backgroundImage = `url(${url})`;
+            } else {
+                showToast(result.message || 'Upload failed', 'error');
+            }
+        } catch (err) {
+            showToast('Network error during upload', 'error');
+            console.error(err);
+        }
+    }
+  </script>
+    <!-- include Activity Tracker & Stats Engine -->
+    <script src="js/activity-tracker.js"></script>
+    <script src="js/dashboard-stats.js"></script>
+
+  <script>
+  // ══════════════════════════════════════════════════
+  // Aceos Expert AI Chatbot — Knowledge Base Engine
+  // ══════════════════════════════════════════════════
+  const ACEOS_KB = [
+    { keys: ['earn more','increase earnings','boost income','make money','commission'],
+      ans: `💰 To increase your affiliate earnings:\n• Focus on high-ticket products (>$100 price point)\n• Build email lists — email converts 3-5x better than social\n• Use deep links, not homepage links\n• Apply for Commerce to get 50k+ merchant access\n• Optimize your content for buying-intent keywords` },
+    { keys: ['niche','best niche','what to promote','category','market'],
+      ans: `📊 Top affiliate niches in 2025:\n1. **Finance & Investing** — highest EPC\n2. **Health & Wellness** — evergreen demand\n3. **SaaS & Software** — recurring commissions\n4. **Education & Courses** — high trust, high value\n5. **Home & Garden** — volume plays\n\nPick a niche you can create content for consistently.` },
+    { keys: ['signal','inventory score','viewability','attention data','prebid'],
+      ans: `📡 **Aceos Signal** is a free publisher intelligence tool:\n• Measures viewability, attention, and bid rate in real time\n• Shows your Inventory Score vs. market benchmarks\n• Identifies which ad placements perform best\n• Works with Prebid or a lightweight Signal tag\n\nRequest access from your Signal dashboard tab!` },
+    { keys: ['commerce','affiliate link','link generator','merchant','product link'],
+      ans: `🛒 **Aceos Commerce** gives you:\n• Access to 50,000+ merchants\n• Instant affiliate link generation for any product URL\n• Real-time click and conversion analytics\n• Referral program — earn 5% of your referrals' commissions\n\nApply now from the Commerce tab to get started!` },
+    { keys: ['advertising','ad revenue','cpm','display ads','native ads'],
+      ans: `📢 To maximize ad revenue:\n• Increase viewability above 70% using sticky ad units\n• Use lazy-loading to improve page speed\n• Place ads near high-attention zones (above fold, in-content)\n• Apply for Aceos Advertising to access premium demand partners\n• Monitor impression RPM weekly` },
+    { keys: ['content','article','blog','seo','keyword','traffic'],
+      ans: `✍️ Content strategy for affiliates:\n• Target long-tail buying keywords: "best X for Y in 2025"\n• Write comparison articles — they convert 2-3x better\n• Add product review structured data for rich snippets\n• Update old content — Google rewards freshness\n• 1,500-2,500 words tends to rank best for affiliate terms` },
+    { keys: ['social media','instagram','tiktok','youtube','twitter','facebook','linkedin'],
+      ans: `📱 Social media affiliate tips:\n• **TikTok/Reels**: Short product demos with affiliate links in bio\n• **YouTube**: Long-form reviews with link in description\n• **Instagram**: Story swipe-ups are highest converting\n• **Pinterest**: Great for evergreen product pins\n• **LinkedIn**: Best for B2B/SaaS affiliate programs` },
+    { keys: ['email','email list','newsletter','subscribers','email marketing'],
+      ans: `📧 Email marketing for affiliates:\n• Build your list with a lead magnet (free guide, checklist)\n• Segment by interest — don't blast the same offer to all\n• Use strong subject lines: curiosity + benefit\n• Send 2-4 emails/week max to avoid fatigue\n• Single-product focus emails outperform "newsletter" style` },
+    { keys: ['referral','refer','referral link','tier','mlm'],
+      ans: `👥 Aceos Referral Program:\n• Earn 5% of every referred member's commissions — for life\n• Your unique referral link is in the Commerce dashboard\n• Share on social media, your website, or email\n• No cap on referral earnings\n\nEvery active referral compounds your passive income!` },
+    { keys: ['conversion rate','ctr','click through','optimize','a/b test'],
+      ans: `⚡ Conversion rate optimization tips:\n• Use action-oriented CTA buttons: "Get Deal" > "Click Here"\n• Add urgency: limited time, stock countdowns\n• Show real reviews/proof near affiliate CTAs\n• Use exit-intent popups with special offers\n• Monitor click heatmaps to see where users drop off` },
+    { keys: ['scale','grow','scale business','automate','outsource'],
+      ans: `📈 Scaling your affiliate business:\n1. Automate email sequences with tools like Mailchimp\n2. Outsource content creation once you find what works\n3. Reinvest first 50% of commissions into paid traffic\n4. Build a small team around high-performing content\n5. Diversify across 3-5 affiliate programs to reduce risk` },
+    { keys: ['payout','payment','paypal','withdraw','cashout','when do i get paid'],
+      ans: `💳 Payout info:\n• Aceos payouts are processed to your configured PayPal\n• Minimum payout threshold applies per program\n• Commissions are tracked in real-time in your Commerce console\n• Update your PayPal in Commerce → Payout Configuration\n• Most payouts are monthly (Net-30)` },
+    { keys: ['application','apply','status','pending','approved','rejected'],
+      ans: `📋 Application status guide:\n• **Not Started** — go to the relevant tab and apply\n• **Pending** — our team reviews within 2-5 business days\n• **Approved** — full access unlocked, start earning!\n• **Rejected** — contact support for details\n\nCheck your status overview on this Home dashboard.` },
+    { keys: ['seo','search engine','rank','google','organic traffic'],
+      ans: `🔍 SEO for affiliate sites:\n• Target keywords with commercial intent (vs. informational)\n• Build backlinks via guest posts, HARO, and digital PR\n• Use internal linking to strengthen category pages\n• Core Web Vitals: aim for LCP <2.5s, CLS <0.1\n• Schema markup boosts CTR from search results` },
+    { keys: ['paid traffic','google ads','facebook ads','paid ads','ppc'],
+      ans: `💸 Running paid traffic to affiliate offers:\n• Only run paid ads to offers with proven organic conversion\n• Use broad match + audience signals on Google Performance Max\n• Facebook: video creative outperforms static 3:1\n• Track with UTM parameters — know your ROAS from day 1\n• Start with $20-50/day budgets while testing` },
+    { keys: ['hello','hi','hey','good morning','good afternoon','greetings'],
+      ans: `👋 Hey there! Great to see you on the Aceos dashboard.\n\nI'm your Expert AI, trained in affiliate marketing, ad optimization, and business growth.\n\nAsk me anything — I'm here to help you earn more! 💼` },
+    { keys: ['help','support','contact','issue','problem','bug'],
+      ans: `🆘 Need help?\n• For platform issues: use the Contact page\n• For account questions: email support@aceos.com\n• For technical API help: check /docs\n• For live support: click "Chat with Expert" above\n\nI can also answer most affiliate & marketing questions directly here!` },
+    { keys: ['what is aceos','about aceos','how does aceos work','aceos platform'],
+      ans: `🏢 **Aceos** is a premium affiliate monetization platform:\n\n• **Commerce** — affiliate links to 50k+ merchants\n• **Advertising** — native ad monetization for publishers\n• **Signal** — real-time inventory intelligence\n\nAll three work together to maximize your earnings from content, traffic, and ad inventory.` },
+    { keys: ['trading','forex','crypto','stock','financial markets','investment'],
+      ans: `📊 Affiliate marketing in financial niches:\n• Finance affiliates earn the highest CPAs ($100-$1000/lead)\n• Regulated markets require compliant content (no guarantees)\n• Best platforms: broker affiliate programs, trading app referrals\n• Content angle: education > speculation\n• Build trust with transparent disclosure and reviews` },
+    { keys: ['thank','thanks','awesome','great','helpful','good job'],
+      ans: `😊 You're very welcome! That's what I'm here for.\n\nFeel free to ask anything else — marketing tips, platform questions, or strategy advice. Happy earning! 🚀` },
+  ];
+
+  function getBotResponse(input) {
+    const q = input.toLowerCase().trim();
+    for (const item of ACEOS_KB) {
+      if (item.keys.some(k => q.includes(k))) {
+        return item.ans;
+      }
+    }
+    return `🤔 Good question! For "${input}", I recommend:\n• Check the relevant dashboard section (Commerce, Signal, Advertising)\n• Review the docs at /docs\n• Contact our support team for personalized help\n\nYou can also ask me about: affiliate tips, earning strategies, ad optimization, or any platform feature!`;
+  }
+
+  function appendMsg(text, role) {
+    const box = document.getElementById('chatbot-messages');
+    const div = document.createElement('div');
+    div.className = `chat-msg ${role}`;
+    // Convert **bold** markdown and line breaks
+    div.innerHTML = `<span>${text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>')}</span>`;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+    return div;
+  }
+
+  function showTyping() {
+    const box = document.getElementById('chatbot-messages');
+    const div = document.createElement('div');
+    div.className = 'chat-msg bot typing';
+    div.id = 'typing-indicator';
+    div.innerHTML = '<span></span><span></span><span></span>';
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function removeTyping() {
+    const t = document.getElementById('typing-indicator');
+    if (t) t.remove();
+  }
+
+  function sendChatMessage() {
+    const input = document.getElementById('chatbot-input');
+    const text = (input.value || '').trim();
+    if (!text) return;
+    input.value = '';
+    // Hide suggestions after first message
+    document.getElementById('chatbot-suggestions').style.display = 'none';
+    appendMsg(text, 'user');
+    showTyping();
+    setTimeout(() => {
+      removeTyping();
+      appendMsg(getBotResponse(text), 'bot');
+    }, 700 + Math.random() * 400);
+  }
+
+  function sendSuggest(el) {
+    document.getElementById('chatbot-input').value = el.textContent;
+    sendChatMessage();
+  }
+  </script>
+
+</body>
+
+</html>

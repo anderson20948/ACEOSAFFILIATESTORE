@@ -1,5 +1,7 @@
 const express = require('express');
-const router = express.Router();
+const { wrapRouter } = require('../middleware/asyncHandler');
+const { getTokenFromRequest, clearAuthCookie, decodeToken } = require('../middleware/auth');
+const router = wrapRouter(express.Router());
 const { db } = require('../dbConfig');
 const jwt = require('jsonwebtoken');
 const emailService = require('../services/emailService');
@@ -19,19 +21,18 @@ const logger = require('../utils/logger');
 // Middleware to verify admin (Strict Role-Based Access Control)
 const verifyAdmin = (req, res, next) => {
     // 1. Check Passport Session first
-    if (req.isAuthenticated() && req.user.role === 'admin') {
+    if (req.isAuthenticated && req.isAuthenticated() && req.user?.role === 'admin') {
         return next();
     }
 
-    // 2. Fallback to Token verification
-    const token = req.cookies.token || req.headers.authorization?.split(' ')[1];
+    const token = getTokenFromRequest(req);
     if (!token) {
         logger.warn('Unauthorized admin access attempt', { path: req.path, ip: req.ip });
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'aceos-secret-key');
+        const decoded = decodeToken(token);
         if (decoded.role !== 'admin') {
             logger.warn('Access denied for non-admin user', { userId: decoded.id, role: decoded.role });
             return res.status(403).json({ error: 'Access denied. Admins only.' });
@@ -40,7 +41,8 @@ const verifyAdmin = (req, res, next) => {
         next();
     } catch (err) {
         logger.error('Invalid token for admin access', { error: err.message });
-        res.status(403).json({ error: 'Invalid token' });
+        clearAuthCookie(res);
+        return res.status(401).json({ error: 'Session expired or invalid token.' });
     }
 };
 
@@ -872,9 +874,15 @@ router.post('/users', verifyAdmin, async (req, res) => {
 // DELETE User (Admin only)
 router.delete('/users/:id', verifyAdmin, async (req, res) => {
     const { id } = req.params;
+    if (req.user?.id === id) {
+        return res.status(400).json({ error: 'Administrators cannot delete their own account while logged in.' });
+    }
+
     try {
-        // Log before delete (to preserve record)
-        const { data: user } = await db.from('users').select('email').eq('id', id).single();
+        const { data: user, error: userError } = await db.from('users').select('email, role').eq('id', id).single();
+        if (userError || !user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
 
         const { error } = await db.from('users').delete().eq('id', id);
         if (error) throw error;
@@ -882,7 +890,7 @@ router.delete('/users/:id', verifyAdmin, async (req, res) => {
         await db.from('system_logs').insert([{
             user_id: req.user.id,
             activity_type: 'user_delete',
-            details: `Admin deleted user: ${user ? user.email : id}`
+            details: `Admin deleted user: ${user.email}`
         }]);
 
         res.json({ success: true, message: 'User deleted successfully' });
@@ -975,14 +983,22 @@ router.post('/create-user', verifyAdmin, async (req, res) => {
 // DELETE /delete-user/:id -> DELETE /users/:id
 router.delete('/delete-user/:id', verifyAdmin, async (req, res) => {
     const { id } = req.params;
+    if (req.user?.id === id) {
+        return res.status(400).json({ error: 'Administrators cannot delete their own account while logged in.' });
+    }
+
     try {
-        const { data: user } = await db.from('users').select('email').eq('id', id).single();
+        const { data: user, error: userError } = await db.from('users').select('email, role').eq('id', id).single();
+        if (userError || !user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
         const { error } = await db.from('users').delete().eq('id', id);
         if (error) throw error;
         await db.from('system_logs').insert([{
             user_id: req.user?.id,
             activity_type: 'user_delete',
-            details: `Admin deleted user: ${user ? user.email : id}`
+            details: `Admin deleted user: ${user.email}`
         }]).catch(() => {}); // non-critical
         res.json({ success: true, message: 'User deleted successfully' });
     } catch (err) {

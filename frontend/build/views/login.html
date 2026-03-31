@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Bamburi Affiliate</title>
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600%7CPoppins:300,400,500,600,900"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/font-awesome.css">
+    <link rel="stylesheet" href="css/bootstrap.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/colors.css">
+    <meta name="csrf-token" content="<%= csrfToken %>">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+        .login-page {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: #fff;
+            padding: 50px;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+        }
+
+        .login-container .logo {
+            margin-bottom: 30px;
+        }
+
+        .login-container h2 {
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .login-container p {
+            color: #777;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-control {
+            height: 50px;
+            border-radius: 8px;
+            border: 1px solid rgba(221, 221, 221, 0.5);
+            padding: 10px 15px;
+            background: transparent;
+            color: #333;
+        }
+
+        .form-control:focus {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #ff5e14;
+            box-shadow: none;
+            outline: none;
+        }
+
+        .btn-login {
+            width: 100%;
+            height: 50px;
+            background: #ff5e14;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn-login:hover {
+            background: #e04d00;
+            transform: translateY(-2px);
+        }
+
+        .divider {
+            margin: 30px 0;
+            position: relative;
+            text-align: center;
+        }
+
+        .divider::before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: #eee;
+            z-index: 1;
+        }
+
+        .divider span {
+            background: #fff;
+            padding: 0 15px;
+            position: relative;
+            z-index: 2;
+            color: #999;
+            font-size: 14px;
+        }
+
+        .google-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 50px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #fff;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .google-btn:hover {
+            background: #f9f9f9;
+        }
+
+        .footer-links {
+            margin-top: 25px;
+            font-size: 14px;
+            color: #777;
+        }
+
+        .footer-links a {
+            color: #ff5e14;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-page">
+        <div class="login-container">
+            <div class="logo">
+                <a href="/"><img src="images/logo.png" alt="Bamburi" width="150"></a>
+            </div>
+            <h2>Welcome Back!</h2>
+            <p>Login to your affiliate dashboard</p>
+
+            <form id="loginForm">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="email" class="form-control" placeholder="example@mail.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <div style="position: relative;">
+                        <input type="password" id="password" class="form-control" placeholder="••••••••" required>
+                        <i class="fa fa-eye toggle-password"
+                            style="position: absolute; right: 15px; top: 15px; cursor: pointer; color: #777;"></i>
+                    </div>
+                    <div style="text-align: right; margin-top: 5px;">
+                        <a href="forgot-password.html" style="font-size: 13px; color: #ff5e14;">Forgot Password?</a>
+                    </div>
+                </div>
+                <button type="submit" class="btn-login">Sign In</button>
+            </form>
+
+            <div class="divider"><span>OR</span></div>
+
+            <div id="g_id_onload" data-client_id="YOUR_GOOGLE_CLIENT_ID" data-context="signin" data-ux_mode="popup"
+                data-callback="handleGoogleLogin" data-auto_prompt="false">
+            </div>
+            <div class="g_id_signin" data-type="standard" data-shape="rectangular" data-theme="outline"
+                data-text="signin_with" data-size="large" data-logo_alignment="left" data-width="350">
+            </div>
+
+            <div class="footer-links">
+                Don't have an account? <a href="register.html">Sign Up</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/jquery.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            await handleLogin(email, password);
+        });
+
+        function handleGoogleLogin(response) {
+            console.log("Google Login Response:", response);
+            // In a real app, send response.credential to the backend
+            alert("Google Sign-In dummy success! Token: " + response.credential.substring(0, 10) + "...");
+        }
+    </script>
+</body>
+
+</html>

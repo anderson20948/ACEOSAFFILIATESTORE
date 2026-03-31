@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css?family=Open+Sans:400,600,700" rel="stylesheet">
+<link rel="stylesheet" href="/css/auth.css" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Aceos Register</title>
+</head>
+
+<body class="auth-body">
+  <div class="auth-card">
+    <h1>Aceos Register</h1>
+
+    <ul class="auth-errors">
+      <% if (typeof errors !='undefined' ) { %>
+        <% errors.forEach(error=> { %>
+          <li>
+            <%= error.message %>
+          </li>
+          <% }) %>
+            <% } %>
+    </ul>
+
+    <form action="/users/register" method="POST">
+      <div>
+        <input type="text" id="name" name="name" placeholder="Full Name" required />
+      </div>
+      <div>
+        <input type="email" id="email" name="email" placeholder="Email Address" required />
+      </div>
+      <div>
+        <input type="password" id="password" name="password" placeholder="Password" required />
+      </div>
+      <div>
+        <input type="password" id="password2" name="password2" placeholder="Confirm Password" required />
+      </div>
+      <div>
+        <input type="submit" value="Create Account" />
+      </div>
+
+      <div style="margin-top: 20px;">
+        <a href="/users/login">Already have an account? Login</a>
+      </div>
+    </form>
+  </div>
+</body>
+
+</html>

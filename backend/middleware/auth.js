@@ -9,6 +9,34 @@ const getTokenFromRequest = (req) => {
   return token || null;
 };
 
+const clearAuthCookie = (res) => {
+  res.clearCookie('token');
+};
+
+const sendExpiredSession = (res) => {
+  clearAuthCookie(res);
+  return res.status(401).json({
+    success: false,
+    code: 'SESSION_EXPIRED',
+    message: 'Session expired. Please log in again.'
+  });
+};
+
+const decodeToken = (token) => {
+  if (!token) {
+    throw new Error('NO_TOKEN');
+  }
+  return jwt.verify(token, process.env.JWT_SECRET || 'aceos-secret-key');
+};
+
+const getUserFromRequest = (req) => {
+  const token = getTokenFromRequest(req);
+  if (!token) {
+    throw new Error('NO_TOKEN');
+  }
+  return decodeToken(token);
+};
+
 const ensureApiAuthenticated = (req, res, next) => {
   if (req.isAuthenticated && req.isAuthenticated()) {
     return next();
@@ -20,15 +48,18 @@ const ensureApiAuthenticated = (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'aceos-secret-key');
+    const decoded = decodeToken(token);
     req.user = decoded;
     return next();
   } catch (err) {
-    return res.status(401).json({ success: false, message: 'Session expired' });
+    return sendExpiredSession(res);
   }
 };
 
 module.exports = {
   ensureApiAuthenticated,
-  getTokenFromRequest
+  getTokenFromRequest,
+  clearAuthCookie,
+  decodeToken,
+  getUserFromRequest
 };

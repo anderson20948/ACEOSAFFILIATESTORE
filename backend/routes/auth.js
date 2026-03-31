@@ -1,5 +1,7 @@
 const express = require('express');
-const router = express.Router();
+const { wrapRouter } = require('../middleware/asyncHandler');
+const { getTokenFromRequest, clearAuthCookie, getUserFromRequest } = require('../middleware/auth');
+const router = wrapRouter(express.Router());
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { db } = require('../dbConfig');
@@ -170,7 +172,8 @@ router.post('/login', async (req, res) => {
             token: token,
             role: userRole,
             id: user.id,
-            username: user.name
+            username: user.name,
+            profile_picture_url: user.profile_picture_url || null
         });
     } catch (err) {
         logger.error('Login error:', { error: err.message, stack: err.stack });
@@ -200,14 +203,45 @@ router.get('/profile', async (req, res) => {
 
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
-        return res.json({
+        const { data: userRecord, error: userError } = await db
+            .from('users')
+            .select('profile_picture_url')
+            .eq('id', decoded.id)
+            .single();
+
+        res.json({
             id: decoded.id,
             email: decoded.email,
             name: decoded.name,
-            role: decoded.role || 'affiliate'
+            role: decoded.role || 'affiliate',
+            profile_picture_url: userError || !userRecord ? null : userRecord.profile_picture_url || null
         });
     } catch (err) {
+        clearAuthCookie(res);
         return res.status(401).json({ error: 'Session expired or invalid token.' });
+    }
+});
+
+router.post('/refresh-token', async (req, res) => {
+    try {
+        const decoded = getUserFromRequest(req);
+        const newToken = jwt.sign(
+            { id: decoded.id, email: decoded.email, role: decoded.role || 'affiliate', name: decoded.name },
+            JWT_SECRET,
+            { expiresIn: '24h' }
+        );
+
+        res.cookie('token', newToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 24 * 60 * 60 * 1000
+        });
+
+        res.json({ success: true, token: newToken, expiresIn: 24 * 60 * 60 });
+    } catch (err) {
+        clearAuthCookie(res);
+        res.status(401).json({ success: false, message: 'Session expired. Please log in again.' });
     }
 });
 

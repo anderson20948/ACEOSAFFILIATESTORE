@@ -1,5 +1,6 @@
 const express = require('express');
-const router = express.Router();
+const { wrapRouter } = require('../middleware/asyncHandler');
+const router = wrapRouter(express.Router());
 const { db } = require('../dbConfig');
 const logger = require('../utils/logger');
 const { trackingLimiter } = require('../middleware/rateLimiter');

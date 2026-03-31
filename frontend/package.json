@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "start": "http-server . -p 8080",
-    "dev": "http-server . -p 8080"
+    "dev": "http-server . -p 8080",
+    "build": "node scripts/build.js"
   },
   "devDependencies": {
     "http-server": "^14.1.1"

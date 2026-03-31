@@ -2,6 +2,7 @@ require("dotenv").config({ path: require('path').resolve(__dirname, '.env') });
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const path = require("path");
+const fs = require("fs");
 const { db } = require("./dbConfig");
 const bcrypt = require("bcryptjs");
 const passport = require("passport");
@@ -19,6 +20,8 @@ const customSanitizer = require("./middleware/sanitizer");
 const compression = require("compression");
 const rootDir = path.resolve(__dirname, '..');
 const frontendDir = path.join(rootDir, 'frontend');
+const buildDir = path.join(frontendDir, 'build');
+const effectiveFrontendDir = fs.existsSync(buildDir) ? buildDir : frontendDir;
 const nodeModulesDir = path.join(rootDir, 'node_modules');
 
 const PORT = process.env.PORT || 3000;
@@ -230,7 +233,7 @@ app.get('/cdn/font-awesome.css', (req, res) => {
   if (CDN_CONFIG.enabled) {
     res.redirect(302, CDN_CONFIG.assets.fontAwesome);
   } else {
-    res.sendFile(path.join(frontendDir, 'css', 'font-awesome.css'));
+    res.sendFile(path.join(effectiveFrontendDir, 'css', 'font-awesome.css'));
   }
 });
 
@@ -238,7 +241,7 @@ app.get('/cdn/jquery.js', (req, res) => {
   if (CDN_CONFIG.enabled) {
     res.redirect(302, CDN_CONFIG.assets.jquery);
   } else {
-    res.sendFile(path.join(frontendDir, 'js', 'jquery.js'));
+    res.sendFile(path.join(effectiveFrontendDir, 'js', 'jquery.js'));
   }
 });
 
@@ -290,7 +293,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 app.set("view engine", "ejs");
-app.set("views", path.join(frontendDir, "views"));
+app.set("views", path.join(effectiveFrontendDir, "views"));
 app.use(cookieParser());
 
 // Trust Vercel's proxy properly so secure cookies work over HTTPS
@@ -323,13 +326,13 @@ const cacheOptions = {
     }
   }
 };
-app.use(express.static(path.join(frontendDir, "public"), cacheOptions));
-app.use(express.static(path.join(frontendDir, "views"), cacheOptions));
-app.use("/js", express.static(path.join(frontendDir, "js"), cacheOptions));
-app.use("/css", express.static(path.join(frontendDir, "css"), cacheOptions));
-app.use("/images", express.static(path.join(frontendDir, "images"), cacheOptions));
-app.use("/fonts", express.static(path.join(frontendDir, "fonts"), cacheOptions));
-app.use(express.static(path.join(frontendDir, "users"), cacheOptions));
+app.use(express.static(path.join(effectiveFrontendDir, "public"), cacheOptions));
+app.use(express.static(path.join(effectiveFrontendDir, "views"), cacheOptions));
+app.use("/js", express.static(path.join(effectiveFrontendDir, "js"), cacheOptions));
+app.use("/css", express.static(path.join(effectiveFrontendDir, "css"), cacheOptions));
+app.use("/images", express.static(path.join(effectiveFrontendDir, "images"), cacheOptions));
+app.use("/fonts", express.static(path.join(effectiveFrontendDir, "fonts"), cacheOptions));
+app.use(express.static(path.join(effectiveFrontendDir, "users"), cacheOptions));
 
 // Mount API routes
 const authRouter = require('./routes/auth');
@@ -351,7 +354,7 @@ app.use('/api/tracking', trackingRouter);
 app.use('/api/profile', profileRouter);
 
 // Static serving for profile uploads
-app.use('/uploads', express.static(path.join(frontendDir, 'public', 'uploads')));
+app.use('/uploads', express.static(path.join(effectiveFrontendDir, 'public', 'uploads')));
 
 function sendFrontendFile(res, filePath) {
   res.sendFile(filePath, (err) => {
@@ -370,11 +373,11 @@ function sendFrontendFile(res, filePath) {
 
 // Pages
 app.get("/", (req, res) => {
-  sendFrontendFile(res, path.join(frontendDir, "views", "home.html"));
+  sendFrontendFile(res, path.join(effectiveFrontendDir, "views", "home.html"));
 });
 
 app.get("/home.html", (req, res) => {
-  res.sendFile(path.join(frontendDir, "views", "home.html"));
+  res.sendFile(path.join(effectiveFrontendDir, "views", "home.html"));
 });
 
 app.get("/home", (req, res) => {
@@ -382,7 +385,7 @@ app.get("/home", (req, res) => {
 });
 
 app.get("/login.html", (req, res) => {
-  res.sendFile(path.join(frontendDir, "views", "login.html"));
+  res.sendFile(path.join(effectiveFrontendDir, "views", "login.html"));
 });
 
 app.get("/login", (req, res) => {
@@ -390,7 +393,7 @@ app.get("/login", (req, res) => {
 });
 
 app.get("/register.html", (req, res) => {
-  res.sendFile(path.join(frontendDir, "views", "register.html"));
+  res.sendFile(path.join(effectiveFrontendDir, "views", "register.html"));
 });
 
 app.get("/register", (req, res) => {
@@ -398,7 +401,7 @@ app.get("/register", (req, res) => {
 });
 
 app.get("/admin.html", checkSuperAdmin, (req, res) => {
-  res.sendFile(path.join(frontendDir, "views", "admin.html"));
+  res.sendFile(path.join(effectiveFrontendDir, "views", "admin.html"));
 });
 
 app.get("/admin", (req, res) => {
@@ -407,19 +410,19 @@ app.get("/admin", (req, res) => {
 
 // Dashboard routes for authenticated users (both Passport session and JWT token supported)
 app.get("/dashboard-products.html", ensureAuthenticated, (req, res) => {
-  res.sendFile(path.join(frontendDir, "views", "dashboard-products.html"));
+  res.sendFile(path.join(effectiveFrontendDir, "views", "dashboard-products.html"));
 });
 
 app.get("/dashboard-commerce.html", ensureAuthenticated, (req, res) => {
-  res.sendFile(path.join(frontendDir, "views", "dashboard-commerce.html"));
+  res.sendFile(path.join(effectiveFrontendDir, "views", "dashboard-commerce.html"));
 });
 
 app.get("/dashboard-advertising.html", ensureAuthenticated, (req, res) => {
-  res.sendFile(path.join(frontendDir, "views", "dashboard-advertising.html"));
+  res.sendFile(path.join(effectiveFrontendDir, "views", "dashboard-advertising.html"));
 });
 
 app.get("/dashboard-signal.html", ensureAuthenticated, (req, res) => {
-  res.sendFile(path.join(frontendDir, "views", "dashboard-signal.html"));
+  res.sendFile(path.join(effectiveFrontendDir, "views", "dashboard-signal.html"));
 });
 
 app.get("/index", (req, res) => {
@@ -552,15 +555,17 @@ function isPassportAuthenticated(req) {
 function ensureGuest(req, res, next) {
   if (isPassportAuthenticated(req)) {
     // Redirect to a single dashboard route, which will handle role-based splitting
-    return res.redirect("/dashboard");
+    return res.redirect('/dashboard');
   }
+
   // Also check JWT token
   const token = req.cookies.token || req.headers.authorization?.split(' ')[1];
   if (token) {
     try {
       jwt.verify(token, process.env.JWT_SECRET || 'aceos-secret-key');
-      return res.redirect("/dashboard");
+      return res.redirect('/dashboard');
     } catch (err) {
+      res.clearCookie('token');
       // Token invalid, continue to login
     }
   }
@@ -589,10 +594,17 @@ function ensureAuthenticated(req, res, next) {
     return next();
   } catch (err) {
     logger.error('Invalid token for protected route access', { error: err.message });
+    res.clearCookie('token');
+
     if (req.path.startsWith('/api/')) {
-      return res.status(401).json({ error: "Your session has expired. Please log in again." });
+      return res.status(401).json({
+        success: false,
+        code: 'SESSION_EXPIRED',
+        message: 'Your session has expired. Please log in again.'
+      });
     }
-    return res.redirect("/users/login");
+
+    return res.redirect('/users/login?expired=1');
   }
 }
 
@@ -617,28 +629,45 @@ process.on('uncaughtException', (err) => {
   // process.exit(1);
 });
 
-// Global Error Handler — MUST be the very last middleware.
-// Ensures all unhandled errors return JSON for API/AJAX calls, never HTML.
-app.use((err, req, res, next) => {
-  logger.error("Unhandled Exception:", { error: err.message, stack: err.stack });
+// 404 handler for unmatched routes
+app.use((req, res, next) => {
   const isApiRequest = req.path.startsWith('/api/') ||
                        req.xhr ||
                        (req.headers.accept && req.headers.accept.includes('application/json'));
 
-  const payload = { error: "An unexpected internal server error occurred." };
-  if (process.env.NODE_ENV !== 'production') {
+  if (isApiRequest) {
+    return res.status(404).json({ error: 'Endpoint not found.' });
+  }
+
+  res.status(404).send('Not Found');
+});
+
+// Global Error Handler — MUST be the very last middleware.
+// Ensures all unhandled errors return JSON for API/AJAX calls, never HTML.
+app.use((err, req, res, next) => {
+  logger.error('Unhandled Exception:', { error: err.message, stack: err.stack });
+  const isApiRequest = req.path.startsWith('/api/') ||
+                       req.xhr ||
+                       (req.headers.accept && req.headers.accept.includes('application/json'));
+
+  const statusCode = err.statusCode || 500;
+  const payload = {
+    error: err.message || 'An unexpected internal server error occurred.'
+  };
+
+  if (process.env.NODE_ENV !== 'production' && err.stack) {
     payload.details = err.stack;
   }
 
   if (isApiRequest) {
-    return res.status(500).json(payload);
+    return res.status(statusCode).json(payload);
   }
 
   if (process.env.NODE_ENV !== 'production') {
-    return res.status(500).send(err.stack || "Internal Server Error");
+    return res.status(statusCode).send(err.stack || 'Internal Server Error');
   }
 
-  res.status(500).send("Internal Server Error");
+  res.status(statusCode).send('Internal Server Error');
 });
 
 module.exports = app;
