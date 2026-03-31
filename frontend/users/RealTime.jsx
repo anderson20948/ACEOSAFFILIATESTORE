@@ -13,7 +13,7 @@ function App() {
 
   useEffect(() => {
     // Connect to Socket.io server
-    const socket = io(process.env.REACT_APP_SERVER_URL || 'http://localhost:5433');
+    const socket = io(process.env.REACT_APP_SERVER_URL || 'https://aceosaffiliatestore-backend.onrender.com');
     setSocket(socket);
 
     // Request initial data
