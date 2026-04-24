@@ -1,6 +1,7 @@
 const express = require('express');
 const { wrapRouter } = require('../middleware/asyncHandler');
-const { getTokenFromRequest, clearAuthCookie, decodeToken } = require('../middleware/auth');
+const { getTokenFromRequest, clearAuthCookie, decodeToken, verifyAdmin } = require('../middleware/auth');
+
 const router = wrapRouter(express.Router());
 const { db } = require('../dbConfig');
 const jwt = require('jsonwebtoken');
@@ -9,6 +10,16 @@ const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 const multer = require('multer');
 const path = require('path');
+const rateLimit = require('express-rate-limit');
+
+// Rate limiter for sensitive admin actions: 3 attempts per hour
+const adminActionLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 3,
+    message: { error: 'Security limit: Only 3 administrative actions allowed per hour.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
 
 // Configure multer for feature uploads (using Memory Storage for Vercel compatibility)
 const upload = multer({ 
@@ -18,33 +29,7 @@ const upload = multer({
 
 const logger = require('../utils/logger');
 
-// Middleware to verify admin (Strict Role-Based Access Control)
-const verifyAdmin = (req, res, next) => {
-    // 1. Check Passport Session first
-    if (req.isAuthenticated && req.isAuthenticated() && req.user?.role === 'admin') {
-        return next();
-    }
 
-    const token = getTokenFromRequest(req);
-    if (!token) {
-        logger.warn('Unauthorized admin access attempt', { path: req.path, ip: req.ip });
-        return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    try {
-        const decoded = decodeToken(token);
-        if (decoded.role !== 'admin') {
-            logger.warn('Access denied for non-admin user', { userId: decoded.id, role: decoded.role });
-            return res.status(403).json({ error: 'Access denied. Admins only.' });
-        }
-        req.user = decoded;
-        next();
-    } catch (err) {
-        logger.error('Invalid token for admin access', { error: err.message });
-        clearAuthCookie(res);
-        return res.status(401).json({ error: 'Session expired or invalid token.' });
-    }
-};
 
 router.use(verifyAdmin);
 
@@ -202,7 +187,7 @@ router.get('/users', verifyAdmin, async (req, res) => {
         if (error) throw error;
 
         // Map 'name' to 'username' as expected by frontend
-        const mappedUsers = users.map(u => ({ ...u, username: u.name }));
+        const mappedUsers = users.map(u => ({ ...u, username: u.name, user_status: u.user_status || 'active' }));
         res.json(mappedUsers);
     } catch (err) {
         logger.error(err);
@@ -750,9 +735,11 @@ router.get('/users-detailed', verifyAdmin, async (req, res) => {
 
         if (error) throw error;
 
+        const mappedUsers = users.map(u => ({ ...u, user_status: u.user_status || 'active' }));
+
         res.json({
             success: true,
-            users: users
+            users: mappedUsers
         });
     } catch (err) {
         logger.error(err);
@@ -788,14 +775,77 @@ router.post('/invite-advertiser', verifyAdmin, async (req, res) => {
     }
 });
 
+// POST Delete User
+router.delete('/users/:id', adminActionLimiter, verifyAdmin, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { error } = await db.from('users').delete().eq('id', id);
+        if (error) throw error;
+
+        await db.from('system_logs').insert([{
+            activity_type: 'user_delete',
+            details: `Admin ${req.user.name} deleted user ID: ${id}`
+        }]);
+
+        res.json({ success: true, message: 'User deleted successfully' });
+    } catch (err) {
+        logger.error('Error deleting user:', err);
+        res.status(500).json({ success: false, error: 'Error deleting user' });
+    }
+});
+
+// POST Bulk Revoke All Non-Admin Users
+router.post('/users/bulk-revoke', adminActionLimiter, verifyAdmin, async (req, res) => {
+    try {
+        const { error } = await db
+            .from('users')
+            .update({ user_status: 'revoked' })
+            .neq('role', 'admin');
+
+        if (error) throw error;
+
+        await db.from('system_logs').insert([{
+            activity_type: 'bulk_user_revocation',
+            details: `Admin ${req.user.name} revoked access for all non-admin users.`
+        }]);
+
+        res.json({ success: true, message: 'All non-admin users have been revoked.' });
+    } catch (err) {
+        logger.error('Bulk revocation error:', err);
+        res.status(500).json({ success: false, error: 'Error during bulk revocation' });
+    }
+});
+router.post('/users/:id/status', adminActionLimiter, verifyAdmin, async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body; // 'active' or 'revoked'
+
+    if (!['active', 'revoked'].includes(status)) {
+        return res.status(400).json({ error: 'Invalid status' });
+    }
+
+    try {
+        const { error } = await db.from('users').update({ user_status: status }).eq('id', id);
+        if (error) throw error;
+
+        await db.from('system_logs').insert([{
+            activity_type: 'user_status_change',
+            details: `Admin ${req.user.name} changed status of user ID: ${id} to ${status}`
+        }]);
+
+        res.json({ success: true, message: `User access ${status === 'active' ? 'restored' : 'revoked'} successfully` });
+    } catch (err) {
+        logger.error('Error updating user status:', err);
+        res.status(500).json({ success: false, error: 'Error updating user status' });
+    }
+});
+
 // Bulk reject all pending advertising applications
 router.post("/reject-all-pending-applications", async (req, res) => {
     const { reason } = req.body;
     try {
-        // Fetch all pending applications
         const { data: pendingApps, error: fetchError } = await db
             .from('advertising_applications')
-            .select('id, user_id, application_type, users(email, name)')
+            .select('id, users(email)')
             .eq('status', 'pending');
 
         if (fetchError) throw fetchError;
@@ -958,7 +1008,7 @@ router.delete('/ads/:id', verifyAdmin, async (req, res) => {
 
 // Route aliases for admin-dashboard.js compatibility
 // POST /create-user -> POST /users
-router.post('/create-user', verifyAdmin, async (req, res) => {
+router.post('/create-user', adminActionLimiter, verifyAdmin, async (req, res) => {
     const { name, email, password, role } = req.body;
     if (!name || !email || !password) return res.status(400).json({ error: 'Missing required fields' });
     try {
@@ -1008,7 +1058,7 @@ router.delete('/delete-user/:id', verifyAdmin, async (req, res) => {
 });
 
 // POST /reset-user-password (Admin only)
-router.post('/reset-user-password', verifyAdmin, async (req, res) => {
+router.post('/reset-user-password', adminActionLimiter, verifyAdmin, async (req, res) => {
     const { userId } = req.body;
     if (!userId) return res.status(400).json({ error: 'User ID is required' });
 

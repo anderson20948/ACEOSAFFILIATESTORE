@@ -1,0 +1,404 @@
+{
+  "users": [
+    {
+      "id": "admin-001",
+      "created_at": "2026-04-23T09:40:00.000Z",
+      "name": "Aceos Administrator",
+      "email": "admin@aceos.com",
+      "password": "$2a$10$sUyYNqstUaUakFnPTyoP2uT5uhkJsrDrL9CAO3RI7yCaV0GAglq.O",
+      "role": "admin"
+    },
+    {
+      "id": "221539f5-51ad-4e98-be4d-db480a303762",
+      "created_at": "2026-04-22T14:35:15.902Z",
+      "name": "Dennis Admin",
+      "email": "tsumamngindodenis@gmail.com",
+      "password": "$2a$10$j8LNk8pUBhnBo5t/wFEtdOyeNlDOdrBPqXAiQQWP3bTocPETdmHLu",
+      "role": "admin"
+    },
+    {
+      "id": "8afbb309-1241-4e7b-9ed4-ac1ffdeb8b9d",
+      "created_at": "2026-04-22T14:35:15.988Z",
+      "name": "Anderson Admin",
+      "email": "malomoanderson@gmail.com",
+      "password": "$2a$10$AyDLAH2zfdi0hTMHxE9q/ez1yBTmLVuV0qzz5y/W3ocw2XLAr5M2G",
+      "role": "admin"
+    },
+    {
+      "id": "a5589774-ede0-40a1-8753-aa18d0e8b4aa",
+      "created_at": "2026-04-22T17:54:19.032Z",
+      "name": "testuser2",
+      "email": "test2@example.com",
+      "password": "$2a$10$dPTLFKdMjNH9ika6IWyJz.6f4YJii0s1jDpe4F/hE5onTUAprE656",
+      "role": "affiliate"
+    },
+    {
+      "id": "744679c9-941d-4e85-ae28-2bbe8cd82150",
+      "created_at": "2026-04-22T20:58:29.108Z",
+      "name": "premium_user",
+      "email": "premium@example.com",
+      "password": "$2a$10$aIRKc0u41hVw984JjfOyieDmDDnbld978.eVFgGVOVt913xFGggSq",
+      "role": "affiliate"
+    },
+    {
+      "id": "f61198fb-775b-48f4-bf80-380edd4039a3",
+      "created_at": "2026-04-23T06:20:13.206Z",
+      "name": "Manual Tester",
+      "email": "manual@example.com",
+      "password": "$2a$10$OaQOJDHd6UchQbMM8lwv4eVMPgA0wXe4CpCGfKIy8krt2YZsqWQsO",
+      "role": "affiliate"
+    },
+    {
+      "id": "5184e848-ec5f-47a2-b2ae-690f067958e8",
+      "created_at": "2026-04-23T08:17:03.411Z",
+      "name": "Test User 1776932223326",
+      "email": "test1776932223326@mail.com",
+      "password": "$2a$10$sO5.gUE3wLljwzW.G1yUZehkGxx.7cGzgWmXAUSoeNtRJc0FylyNu",
+      "role": "affiliate"
+    },
+    {
+      "id": "02a8b74f-a8b2-4414-bc07-198a27850bf1",
+      "created_at": "2026-04-23T08:43:58.204Z",
+      "name": "TerminalTest",
+      "email": "terminal1776933835825@test.com",
+      "password": "$2a$10$Oh5Y29g9hEkDBOsgJy8V0u5AE4zoUJ1PLNKgvHSRRfWXH0uz8b0WK",
+      "role": "affiliate"
+    },
+    {
+      "id": "d9d41bbf-2f92-466a-be80-1926a450e661",
+      "created_at": "2026-04-23T08:47:54.236Z",
+      "name": "john",
+      "email": "johndoe@gmail.com",
+      "password": "$2a$10$sh0dpQqEwoSQMYHV1t4nNu/F.ADzoMQdZv6zgDMzbuhK9EqNe9cSC",
+      "role": "affiliate"
+    },
+    {
+      "id": "e97dc6c5-e2c2-46ff-9817-93ca8803a540",
+      "created_at": "2026-04-23T09:27:14.600Z",
+      "name": "john",
+      "email": "redmianderson73@gmail.com",
+      "password": "$2a$10$8.IbIO52lEnpulQmaQJXCeD.dc07DtwLfeGExs21jUtCQdL2npYBK",
+      "role": "affiliate"
+    }
+  ],
+  "activities": [
+    {
+      "id": "b2e21ccf-2e1e-4370-aaaa-ae6a516fdd3a",
+      "created_at": "2026-04-22T14:42:09.905Z",
+      "message": "anonymous performed POST on /login"
+    },
+    {
+      "id": "ef43c0df-fed0-42d7-b7cf-491221c6289f",
+      "created_at": "2026-04-22T14:42:17.122Z",
+      "message": "anonymous performed POST on /login"
+    },
+    {
+      "id": "634c0de1-09ac-4139-980a-8058ceefc043",
+      "created_at": "2026-04-22T17:21:42.517Z",
+      "message": "anonymous performed POST on /login"
+    },
+    {
+      "id": "5d21489f-4c33-4ac1-b9ed-9729cc1cdc80",
+      "created_at": "2026-04-22T17:26:23.435Z",
+      "message": "anonymous performed POST on /register"
+    },
+    {
+      "id": "3c612be5-7c49-4bd0-90c8-8565cdaf274c",
+      "created_at": "2026-04-22T17:26:23.520Z",
+      "message": "New user registered: testuser (test@example.com)"
+    },
+    {
+      "id": "a80f62fc-cd26-4a8d-ba45-f7d62194ce5b",
+      "created_at": "2026-04-22T17:54:18.927Z",
+      "message": "anonymous performed POST on /register"
+    },
+    {
+      "id": "0f796584-bbb5-4aa8-b6d3-94a86c138ce8",
+      "created_at": "2026-04-22T17:54:19.037Z",
+      "message": "New user registered: testuser2 (test2@example.com)"
+    },
+    {
+      "id": "99f14814-ec13-4e55-9dd5-53ff70cdefdf",
+      "created_at": "2026-04-22T20:58:28.990Z",
+      "message": "anonymous performed POST on /register"
+    },
+    {
+      "id": "3b1ec1f5-0d62-493d-907f-375fbb0c561f",
+      "created_at": "2026-04-22T20:58:29.116Z",
+      "message": "New user registered: premium_user (premium@example.com)"
+    },
+    {
+      "id": "c342af0b-6e28-4b27-a530-651f9253b3e4",
+      "created_at": "2026-04-23T05:47:20.020Z",
+      "message": "anonymous performed POST on /login"
+    },
+    {
+      "id": "14867949-8d9f-4590-9d72-cd581d57debf",
+      "created_at": "2026-04-23T06:08:46.397Z",
+      "message": "anonymous performed POST on /login"
+    },
+    {
+      "id": "21e1c6b1-00c8-40e4-bba0-a8847449f7c2",
+      "created_at": "2026-04-23T06:09:40.157Z",
+      "message": "anonymous performed POST on /login"
+    },
+    {
+      "id": "2fe51523-cf5e-4908-ae53-913ade463aed",
+      "created_at": "2026-04-23T06:20:13.061Z",
+      "message": "anonymous performed POST on /register"
+    },
+    {
+      "id": "fc244439-14b0-4de9-97d9-97afa62ecdbb",
+      "created_at": "2026-04-23T06:20:13.225Z",
+      "message": "New user registered: Manual Tester (manual@example.com)"
+    },
+    {
+      "id": "f06ccaae-b0db-4d6f-a5bf-c1fac580f2ab",
+      "created_at": "2026-04-23T06:22:22.154Z",
+      "message": "anonymous performed POST on /login"
+    },
+    {
+      "id": "5b775e45-e7da-4ae1-ade3-5c7acf1a9020",
+      "created_at": "2026-04-23T08:17:03.316Z",
+      "message": "anonymous performed POST on /register"
+    },
+    {
+      "id": "c5de375e-0bc1-4e97-99d8-2d9e9537195e",
+      "created_at": "2026-04-23T08:17:03.321Z",
+      "message": "anonymous performed POST on /register"
+    },
+    {
+      "id": "03da326a-fbc4-4a8f-8439-c36de60804b1",
+      "created_at": "2026-04-23T08:17:03.324Z",
+      "message": "anonymous performed POST on /register"
+    },
+    {
+      "id": "94a6ede5-34c9-4019-b10f-9164f38a460e",
+      "created_at": "2026-04-23T08:17:03.326Z",
+      "message": "anonymous performed POST on /register"
+    },
+    {
+      "id": "571496cf-41bc-48f4-9204-e3afe23dc856",
+      "created_at": "2026-04-23T08:17:03.416Z",
+      "message": "New user registered: Test User 1776932223326 (test1776932223326@mail.com)"
+    },
+    {
+      "id": "0ab88f5f-85ec-4b41-b129-ac1a7547526f",
+      "created_at": "2026-04-23T08:26:46.500Z",
+      "message": "anonymous performed POST on /login"
+    },
+    {
+      "id": "d70b4bd7-ac12-4158-80d2-cb1c1503f93b",
+      "created_at": "2026-04-23T08:43:56.948Z",
+      "message": "anonymous performed POST on /register"
+    },
+    {
+      "id": "51cac109-fcc6-43b7-b5eb-a577231687e9",
+      "created_at": "2026-04-23T08:43:58.207Z",
+      "message": "New user registered: TerminalTest (terminal1776933835825@test.com)"
+    },
+    {
+      "id": "c26dc57e-6c16-4a06-bb9c-fc832a2ef09d",
+      "created_at": "2026-04-23T08:47:51.324Z",
+      "message": "anonymous performed POST on /register"
+    },
+    {
+      "id": "491ee9c9-3680-438f-a59d-2aac52a6eddf",
+      "created_at": "2026-04-23T08:47:54.799Z",
+      "message": "New user registered: john (johndoe@gmail.com)"
+    },
+    {
+      "id": "9a8b4c5d-240a-4a16-939b-94469303d5d1",
+      "created_at": "2026-04-23T08:48:38.084Z",
+      "message": "johndoe@gmail.com performed POST on /api/activity/start-session"
+    },
+    {
+      "id": "25fdad76-b0f0-4985-9c68-a509cbf6bcf9",
+      "created_at": "2026-04-23T09:25:33.704Z",
+      "message": "johndoe@gmail.com performed POST on /login"
+    },
+    {
+      "id": "90298b84-82b8-4f33-aecb-e3114fd9a8da",
+      "created_at": "2026-04-23T09:25:55.914Z",
+      "message": "johndoe@gmail.com performed POST on /login"
+    },
+    {
+      "id": "9fcc3b50-6291-4fb8-a35c-d119f0db3c0a",
+      "created_at": "2026-04-23T09:27:14.461Z",
+      "message": "johndoe@gmail.com performed POST on /register"
+    },
+    {
+      "id": "13c44682-f8d0-4d7f-aeda-29c16e6f506f",
+      "created_at": "2026-04-23T09:27:14.602Z",
+      "message": "New user registered: john (redmianderson73@gmail.com)"
+    },
+    {
+      "id": "a8028a7a-01dc-40e7-b23f-d189fbc08d36",
+      "created_at": "2026-04-23T09:27:40.397Z",
+      "message": "redmianderson73@gmail.com performed POST on /api/activity/start-session"
+    },
+    {
+      "id": "60c08cfc-b764-48ff-998a-afe2ed318929",
+      "created_at": "2026-04-23T09:31:46.627Z",
+      "message": "redmianderson73@gmail.com performed POST on /login"
+    },
+    {
+      "id": "1e015333-1def-459c-a742-4c1ee139d679",
+      "created_at": "2026-04-23T09:32:02.330Z",
+      "message": "redmianderson73@gmail.com performed POST on /api/activity/start-session"
+    },
+    {
+      "id": "156df5db-b4b2-4a02-90cf-81cca1ca5862",
+      "created_at": "2026-04-23T09:34:55.748Z",
+      "message": "redmianderson73@gmail.com performed POST on /login"
+    },
+    {
+      "id": "4daf6ac4-b503-4da5-9999-34b8e61075d9",
+      "created_at": "2026-04-23T09:35:04.879Z",
+      "message": "redmianderson73@gmail.com performed POST on /api/activity/start-session"
+    },
+    {
+      "id": "47a9b837-5332-464c-be6e-b24be3227ec1",
+      "created_at": "2026-04-23T09:35:25.088Z",
+      "message": "redmianderson73@gmail.com performed POST on /api/activity/start-session"
+    },
+    {
+      "id": "bef8974b-4b07-4269-a2db-bef886839550",
+      "created_at": "2026-04-23T09:37:15.170Z",
+      "message": "redmianderson73@gmail.com performed POST on /login"
+    },
+    {
+      "id": "8a43fba3-1704-429c-8978-5595bc87aac4",
+      "created_at": "2026-04-23T09:37:20.030Z",
+      "message": "redmianderson73@gmail.com performed POST on /api/activity/start-session"
+    },
+    {
+      "id": "65a91b76-43d4-4c33-90fc-611c65fec76e",
+      "created_at": "2026-04-23T09:38:05.038Z",
+      "message": "tsumamngindodenis@gmail.com performed POST on /login"
+    },
+    {
+      "id": "dfa2ea8a-fd6d-4fed-8129-c8d6368f39c6",
+      "created_at": "2026-04-23T09:41:55.937Z",
+      "message": "redmianderson73@gmail.com performed POST on /login"
+    },
+    {
+      "id": "e44d44a8-c5bc-4d1c-837a-91434ec3e807",
+      "created_at": "2026-04-23T17:00:14.406Z",
+      "message": "anonymous performed POST on /login"
+    },
+    {
+      "id": "70c1db90-b79e-4dcb-b021-979f28020f3c",
+      "created_at": "2026-04-23T17:00:20.785Z",
+      "message": "anonymous performed POST on /login"
+    },
+    {
+      "id": "24484540-5864-4e2f-b0fe-aaaf2029c851",
+      "created_at": "2026-04-23T17:19:39.525Z",
+      "message": "anonymous performed POST on /login"
+    },
+    {
+      "id": "4815c406-c689-46fb-bf8b-85ddfd3b675f",
+      "created_at": "2026-04-23T18:06:20.203Z",
+      "message": "anonymous performed POST on /login"
+    },
+    {
+      "id": "ca9fafa9-abf5-44c5-9bba-933b5c51f163",
+      "created_at": "2026-04-23T19:49:44.791Z",
+      "message": "anonymous performed POST on /login"
+    },
+    {
+      "id": "10d378bf-e8cd-413a-bc64-076e69c5d3cd",
+      "created_at": "2026-04-24T01:28:44.342Z",
+      "message": "anonymous performed POST on /login"
+    },
+    {
+      "id": "cc0ddbf3-f4a1-4850-af97-275a03884f1d",
+      "created_at": "2026-04-24T01:32:19.867Z",
+      "message": "anonymous performed POST on /login"
+    }
+  ],
+  "password_resets": [],
+  "email_logs": [
+    {
+      "id": "fd26b438-d0ec-4d3e-bc50-3662f2ace6ee",
+      "created_at": "2026-04-22T17:26:23.529Z",
+      "recipient_email": "test@example.com",
+      "recipient_name": "testuser",
+      "subject": "🎊 Welcome to Aceos Affiliate Program!",
+      "email_type": "welcome_affiliate",
+      "status": "disabled",
+      "sent_at": "2026-04-22T17:26:23.521Z"
+    },
+    {
+      "id": "cbf34d0e-1b5c-42fe-806b-190c734fc35a",
+      "created_at": "2026-04-22T17:54:19.051Z",
+      "recipient_email": "test2@example.com",
+      "recipient_name": "testuser2",
+      "subject": "🎊 Welcome to Aceos Affiliate Program!",
+      "email_type": "welcome_affiliate",
+      "status": "disabled",
+      "sent_at": "2026-04-22T17:54:19.042Z"
+    },
+    {
+      "id": "7eaa9349-ca39-460a-b103-a31a9c00d530",
+      "created_at": "2026-04-22T20:58:29.129Z",
+      "recipient_email": "premium@example.com",
+      "recipient_name": "premium_user",
+      "subject": "🎊 Welcome to Aceos Affiliate Program!",
+      "email_type": "welcome_affiliate",
+      "status": "disabled",
+      "sent_at": "2026-04-22T20:58:29.121Z"
+    },
+    {
+      "id": "171f238f-2119-4a26-bbd5-bb25950cbc46",
+      "created_at": "2026-04-23T06:20:13.238Z",
+      "recipient_email": "manual@example.com",
+      "recipient_name": "Manual Tester",
+      "subject": "🎊 Welcome to Aceos Affiliate Program!",
+      "email_type": "welcome_affiliate",
+      "status": "disabled",
+      "sent_at": "2026-04-23T06:20:13.227Z"
+    },
+    {
+      "id": "95541bc6-c515-4298-ac0d-c036b551f151",
+      "created_at": "2026-04-23T08:17:03.419Z",
+      "recipient_email": "test1776932223326@mail.com",
+      "recipient_name": "Test User 1776932223326",
+      "subject": "🎊 Welcome to Aceos Affiliate Program!",
+      "email_type": "welcome_affiliate",
+      "status": "disabled",
+      "sent_at": "2026-04-23T08:17:03.418Z"
+    },
+    {
+      "id": "94420ab8-f6bd-4f76-aadd-5295213ef504",
+      "created_at": "2026-04-23T08:43:58.212Z",
+      "recipient_email": "terminal1776933835825@test.com",
+      "recipient_name": "TerminalTest",
+      "subject": "🎊 Welcome to Aceos Affiliate Program!",
+      "email_type": "welcome_affiliate",
+      "status": "disabled",
+      "sent_at": "2026-04-23T08:43:58.211Z"
+    },
+    {
+      "id": "b674a329-3324-414d-8149-00db334a2e76",
+      "created_at": "2026-04-23T08:47:55.252Z",
+      "recipient_email": "johndoe@gmail.com",
+      "recipient_name": "john",
+      "subject": "🎊 Welcome to Aceos Affiliate Program!",
+      "email_type": "welcome_affiliate",
+      "status": "disabled",
+      "sent_at": "2026-04-23T08:47:55.154Z"
+    },
+    {
+      "id": "cbd148cc-6c05-438a-94c6-4950ac844af2",
+      "created_at": "2026-04-23T09:27:14.604Z",
+      "recipient_email": "redmianderson73@gmail.com",
+      "recipient_name": "john",
+      "subject": "🎊 Welcome to Aceos Affiliate Program!",
+      "email_type": "welcome_affiliate",
+      "status": "disabled",
+      "sent_at": "2026-04-23T09:27:14.603Z"
+    }
+  ]
+}

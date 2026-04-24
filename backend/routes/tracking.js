@@ -4,9 +4,10 @@ const router = wrapRouter(express.Router());
 const { db } = require('../dbConfig');
 const logger = require('../utils/logger');
 const { trackingLimiter } = require('../middleware/rateLimiter');
+const { detectFraud } = require('../middleware/fraud');
 
-// Tracking Redirect Route with Fraud Prevention (Click Debouncing)
-router.get('/:slug', trackingLimiter, async (req, res) => {
+// Tracking Redirect Route with Fraud Prevention (Click Debouncing + Pattern Detection)
+router.get('/:slug', trackingLimiter, detectFraud, async (req, res) => {
     const { slug } = req.params;
     const ip = req.ip || req.get('x-forwarded-for') || req.connection.remoteAddress;
     const userAgent = req.get('User-Agent');

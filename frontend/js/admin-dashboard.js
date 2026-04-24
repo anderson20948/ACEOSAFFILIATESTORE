@@ -3,7 +3,7 @@
 // Wires ALL admin sections to live backend APIs
 
 const API_BASE = '/api/admin';
-const REFRESH_INTERVAL = 30000; // Refresh every 30 seconds
+const REFRESH_INTERVAL = 5000; // Refresh every 5 seconds for real-time feedback
 
 // ───────────────────────────────── INIT ─────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -106,7 +106,35 @@ function loadAllData() {
     loadActivities();
     loadAds();
     loadNotifications();
-    loadEmailLogs();
+    loadLogs();
+    loadSystemSettings(); // Feature 2: Customization
+}
+
+/**
+ * FEATURE 3: AUTOMATION & PAYOUTS
+ */
+async function handleAutoPayout() {
+    if (!confirm('Are you sure you want to process ALL pending commissions via PayPal?')) return;
+
+    const btn = document.getElementById('autoPayoutBtn');
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Processing Payouts...';
+
+    try {
+        const response = await safeFetch('/api/payouts/process-bulk', { method: 'POST' });
+        if (response.success) {
+            showNotification(response.message, 'success');
+            loadAllData();
+        } else {
+            showNotification(response.error || 'Payout failed', 'error');
+        }
+    } catch (err) {
+        showNotification('Error processing automated payouts.', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+    }
 }
 
 // ───────────────────────────── TAB NAVIGATION ───────────────────────────────
@@ -405,8 +433,8 @@ async function loadUsers() {
     if (!container) return;
 
     try {
-        const data = await adminFetch('/users');
-        const users = Array.isArray(data) ? data : [];
+        const data = await adminFetch('/users-detailed');
+        const users = data.users || [];
 
         const header = `
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px">
@@ -415,24 +443,10 @@ async function loadUsers() {
                         style="padding:8px 12px;border:1px solid #ddd;border-radius:6px;width:250px"
                         oninput="filterUsersTable(this.value)">
                 </div>
-                <button class="btn-approve" onclick="showCreateUserForm()">
-                    <i class="fa fa-user-plus"></i> Add New User
-                </button>
-            </div>
-            <div id="createUserFormContainer" style="display:none;margin-bottom:20px;padding:20px;background:#f8f9fa;border-radius:8px;border:1px solid #ddd;">
-                <h4 style="margin-bottom:15px">Create New User</h4>
-                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
-                    <input id="newUserName" type="text" placeholder="Full Name" class="form-control" style="height:42px">
-                    <input id="newUserEmail" type="email" placeholder="Email" class="form-control" style="height:42px">
-                    <input id="newUserPassword" type="password" placeholder="Password" class="form-control" style="height:42px">
-                </div>
                 <div style="display:flex;gap:10px">
-                    <select id="newUserRole" class="form-control" style="height:42px">
-                        <option value="affiliate">Affiliate</option>
-                        <option value="admin">Admin</option>
-                    </select>
-                    <button class="btn-approve" onclick="createUser()"><i class="fa fa-save"></i> Create</button>
-                    <button class="btn-reject" onclick="document.getElementById('createUserFormContainer').style.display='none'">Cancel</button>
+                    <button class="btn-reject" style="background:#dc3545" onclick="bulkRevokeUsers()">
+                        <i class="fa fa-ban"></i> Revoke All Non-Admins
+                    </button>
                 </div>
             </div>
         `;
@@ -445,7 +459,10 @@ async function loadUsers() {
                             <th style="padding:12px;text-align:left">Name</th>
                             <th style="padding:12px;text-align:left">Email</th>
                             <th style="padding:12px;text-align:left">Role</th>
-                            <th style="padding:12px;text-align:left">Joined</th>
+                            <th style="padding:12px;text-align:left">Ad Status</th>
+                            <th style="padding:12px;text-align:left">Balance</th>
+                            <th style="padding:12px;text-align:left">User Status</th>
+                            <th style="padding:12px;text-align:left">Last Login</th>
                             <th style="padding:12px;text-align:left">Actions</th>
                         </tr>
                     </thead>
@@ -455,13 +472,27 @@ async function loadUsers() {
                                 <td style="padding:12px"><strong>${u.name || u.username || '—'}</strong></td>
                                 <td style="padding:12px;color:#555">${u.email}</td>
                                 <td style="padding:12px"><span class="role-badge role-${u.role}">${u.role}</span></td>
-                                <td style="padding:12px;font-size:13px">${formatDate(u.created_at)}</td>
                                 <td style="padding:12px">
-                                    <button class="btn-approve" style="font-size:12px; margin-right: 5px; background: #6c757d;" onclick="resetUserPassword('${u.id}', '${u.email}')">
-                                        <i class="fa fa-key"></i> Reset Pass
+                                    <span style="padding: 4px 8px; border-radius: 4px; font-size: 11px; background: ${u.advertising_status === 'active' ? '#d4edda' : '#f8f9fa'}; color: ${u.advertising_status === 'active' ? '#155724' : '#666'};">
+                                        ${u.advertising_status || 'none'}
+                                    </span>
+                                </td>
+                                <td style="padding:12px;font-weight:600">${formatCurrency(u.commission_balance)}</td>
+                                <td style="padding:12px">
+                                    <span style="padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; background: ${u.user_status === 'revoked' ? '#f8d7da' : '#d4edda'}; color: ${u.user_status === 'revoked' ? '#721c24' : '#155724'};">
+                                        ${(u.user_status || 'active').toUpperCase()}
+                                    </span>
+                                </td>
+                                <td style="padding:12px;font-size:12px">${formatDate(u.last_login)}</td>
+                                <td style="padding:12px; display: flex; gap: 5px;">
+                                    <button class="btn-approve" style="font-size:11px; padding: 5px 8px; background: #6c757d;" onclick="resetUserPassword('${u.id}', '${u.email}')" title="Reset Password">
+                                        <i class="fa fa-key"></i>
                                     </button>
-                                    <button class="btn-danger" style="font-size:12px" onclick="deleteUser('${u.id}', '${u.name || u.username}')">
-                                        <i class="fa fa-trash"></i> Remove
+                                    <button class="${u.user_status === 'revoked' ? 'btn-success' : 'btn-reject'}" style="font-size:11px; padding: 5px 8px;" onclick="toggleUserStatus('${u.id}', '${u.user_status === 'revoked' ? 'active' : 'revoked'}')" title="${u.user_status === 'revoked' ? 'Restore' : 'Revoke'} Access">
+                                        <i class="fa fa-${u.user_status === 'revoked' ? 'undo' : 'ban'}"></i>
+                                    </button>
+                                    <button class="btn-danger" style="font-size:11px; padding: 5px 8px;" onclick="deleteUser('${u.id}', '${u.name || u.username}')" title="Delete User">
+                                        <i class="fa fa-trash"></i>
                                     </button>
                                 </td>
                             </tr>
@@ -516,10 +547,39 @@ async function createUser() {
 async function deleteUser(userId, name) {
     if (!confirm(`Permanently remove user "${name}"? This cannot be undone.`)) return;
     try {
-        await adminFetch(`/delete-user/${userId}`, { method: 'DELETE' });
+        await adminFetch(`/users/${userId}`, { method: 'DELETE' });
         showNotification(`User "${name}" removed.`, 'success');
         loadUsers();
         loadOverviewStats();
+    } catch (err) {
+        showNotification('Error: ' + err.message, 'error');
+    }
+}
+
+async function toggleUserStatus(userId, status) {
+    const action = status === 'active' ? 'restore' : 'revoke';
+    if (!confirm(`Are you sure you want to ${action} access for this user?`)) return;
+    
+    try {
+        await adminFetch(`/users/${userId}/status`, {
+            method: 'POST',
+            body: JSON.stringify({ status })
+        });
+        showNotification(`User access ${status === 'active' ? 'restored' : 'revoked'} successfully.`, 'success');
+        loadUsers();
+    } catch (err) {
+        showNotification('Error: ' + err.message, 'error');
+    }
+}
+
+async function bulkRevokeUsers() {
+    if (!confirm('CRITICAL ACTION: Are you sure you want to REVOKE ACCESS for ALL non-admin users in the system? This will immediately lock them out.')) return;
+    if (!confirm('Final confirmation: Proceed with bulk revocation?')) return;
+
+    try {
+        await adminFetch('/users/bulk-revoke', { method: 'POST' });
+        showNotification('Unanimous revocation complete. All non-admin accounts are now locked.', 'success');
+        loadUsers();
     } catch (err) {
         showNotification('Error: ' + err.message, 'error');
     }
@@ -980,3 +1040,9 @@ async function resetUserPassword(userId, email) {
         showNotification('Error: ' + err.message, 'error');
     }
 }
+
+
+/** FEATURE 2: CUSTOMIZATION & BRANDING **/
+async function loadSystemSettings() { try { const response = await safeFetch(" /api/settings\); if (response.success) { const s = response.settings; if (document.getElementById(\brand_name_input\)) document.getElementById(\brand_name_input\).value = s.brand_name || \\; if (document.getElementById(\primary_color_input\)) document.getElementById(\primary_color_input\).value = s.primary_color || \#ff5e14\; document.title = s.brand_name + " - Admin Dashboard\; const brandText = document.querySelector(\.brand-logo span\); if (brandText) brandText.textContent = s.brand_name; } } catch (err) { console.error(\Settings load error:\, err); } }
+
+async function saveSystemSettings() { const brandName = document.getElementById(\brand_name_input\).value; const primaryColor = document.getElementById(\primary_color_input\).value; try { const response = await safeFetch(\/api/settings/update\, { method: \POST\, body: JSON.stringify({ updates: { brand_name: brandName, primary_color: primaryColor } }) }); if (response.success) { showNotification(\Branding updated successfully!\, \success\); loadSystemSettings(); } } catch (err) { showNotification(\Failed to update branding.\, \error\); } }

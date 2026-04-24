@@ -19,16 +19,25 @@ function isAdmin(user) {
 router.post('/register', async (req, res) => {
     const { username, email, password } = req.body;
 
+    // 1. Presence check
     if (!username || !email || !password) {
         return res.status(400).json({ error: 'Please provide name, email, and password' });
     }
 
-    // Server-side password validation
-    if (password.length < 8) {
-        return res.status(400).json({ error: 'Password must be at least 8 characters long' });
+    // 2. Name length check
+    if (username.trim().length < 2) {
+        return res.status(400).json({ error: 'Name must be at least 2 characters long' });
     }
-    if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/\d/.test(password)) {
-        return res.status(400).json({ error: 'Password must contain uppercase, lowercase, and numbers' });
+
+    // 3. Email Format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        return res.status(400).json({ error: 'Please enter a valid email address' });
+    }
+
+    // 4. Password validation
+    if (password.length < 6) {
+        return res.status(400).json({ error: 'Password must be at least 6 characters long' });
     }
 
     try {
@@ -88,8 +97,9 @@ router.post('/register', async (req, res) => {
             { message: `New user registered: ${username} (${email})`, created_at: new Date() }
         ]);
 
-        // Send welcome email (non-blocking)
-        emailService.sendWelcomeEmail(email, username).catch(e => logger.error('Welcome email failed', e));
+        // --- AUTOMATION: Send welcome onboarding email ---
+        emailService.sendOnboarding(email, username, `${req.protocol}://${req.get('host')}/users/dashboard`)
+            .catch(err => logger.error('Failed to send onboarding email:', err));
 
         res.status(201).json({
             message: "Registration successful! Welcome to Aceos.",
@@ -113,10 +123,7 @@ router.post('/login', async (req, res) => {
         return res.status(400).json({ error: 'Please provide email and password.' });
     }
 
-    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
-        logger.error('Login attempt failed because Supabase is not configured.');
-        return res.status(500).json({ error: 'Authentication service is not configured. Please contact support.' });
-    }
+
 
     try {
         // Create a query timeout
@@ -134,6 +141,12 @@ router.post('/login', async (req, res) => {
         }
 
         const user = users[0];
+
+        // Check if user is revoked
+        if (user.user_status === 'revoked') {
+            return res.status(403).json({ error: 'Your account has been revoked. Please contact support.' });
+        }
+
         const isMatch = await bcrypt.compare(password, user.password);
 
         if (!isMatch) {

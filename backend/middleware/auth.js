@@ -1,4 +1,7 @@
 const jwt = require('jsonwebtoken');
+const { db } = require('../dbConfig');
+const logger = require('../utils/logger');
+
 
 const getTokenFromRequest = (req) => {
   if (req.cookies && req.cookies.token) {
@@ -37,6 +40,47 @@ const getUserFromRequest = (req) => {
   return decodeToken(token);
 };
 
+const verifyAdmin = async (req, res, next) => {
+    const logUnauthorized = async (reason, details) => {
+        try {
+            await db.from('admin_notifications').insert([{
+                notification_type: 'security_alert',
+                title: 'Unauthorized Access Attempt',
+                message: `Alert: Unauthorized attempt to access ${req.path} from IP ${req.ip}. Reason: ${reason}. ${details || ''}`,
+                priority: 'critical'
+            }]);
+            logger.warn('Security Alert: Unauthorized access attempt', { path: req.path, ip: req.ip, reason });
+        } catch (err) {
+            logger.error('Failed to log security notification', err);
+        }
+    };
+
+    // 1. Check Passport Session first
+    if (req.isAuthenticated && req.isAuthenticated() && req.user?.role === 'admin') {
+        return next();
+    }
+
+    const token = getTokenFromRequest(req);
+    if (!token) {
+        await logUnauthorized('No token provided');
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    try {
+        const decoded = decodeToken(token);
+        if (decoded.role !== 'admin') {
+            await logUnauthorized('Insufficient permissions', `User ID: ${decoded.id}, Role: ${decoded.role}`);
+            return res.status(403).json({ error: 'Access denied. Admins only.' });
+        }
+        req.user = decoded;
+        next();
+    } catch (err) {
+        await logUnauthorized('Invalid or expired token', err.message);
+        clearAuthCookie(res);
+        return res.status(401).json({ error: 'Session expired or invalid token.' });
+    }
+};
+
 const ensureApiAuthenticated = (req, res, next) => {
   if (req.isAuthenticated && req.isAuthenticated()) {
     return next();
@@ -58,6 +102,7 @@ const ensureApiAuthenticated = (req, res, next) => {
 
 module.exports = {
   ensureApiAuthenticated,
+  verifyAdmin,
   getTokenFromRequest,
   clearAuthCookie,
   decodeToken,

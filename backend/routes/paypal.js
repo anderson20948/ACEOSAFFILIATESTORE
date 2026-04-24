@@ -6,10 +6,11 @@ const { client, MERCHANT_CONFIG } = require('../paypalConfig');
 const { db } = require('../dbConfig');
 const logger = require('../utils/logger');
 const crypto = require('crypto');
+const emailService = require('../services/emailService');
 
 // Create PayPal Order
 router.post('/create-order', async (req, res) => {
-    const { productId, affiliateId } = req.body;
+    const { productId, affiliateId, couponCode } = req.body;
 
     try {
         // Get product details
@@ -24,9 +25,31 @@ router.post('/create-order', async (req, res) => {
         }
 
         const productData = products[0];
-        const price = parseFloat(productData.price);
+        let price = parseFloat(productData.price);
+        let finalAffiliateId = affiliateId;
 
-        // Calculate amounts
+        // --- FEATURE: Coupon Code Tracking & Discounts ---
+        if (couponCode) {
+            const { data: coupon, error: couponError } = await db
+                .from('coupons')
+                .select('*, users(id)')
+                .eq('code', couponCode.toUpperCase())
+                .eq('is_active', true)
+                .single();
+
+            if (coupon && !couponError) {
+                // Apply discount
+                const discount = price * (parseFloat(coupon.discount_percent) / 100);
+                price -= discount;
+                
+                // Attribute commission to coupon owner
+                finalAffiliateId = coupon.user_id;
+                
+                logger.info(`Coupon ${couponCode} applied. Discount: ${discount.toFixed(2)}. Affiliate: ${finalAffiliateId}`);
+            }
+        }
+
+        // Calculate amounts based on final price
         const affiliateCommission = price * MERCHANT_CONFIG.affiliateCommission;
         const platformFee = price * MERCHANT_CONFIG.platformFee;
         const merchantAmount = price - affiliateCommission - platformFee;
@@ -74,7 +97,7 @@ router.post('/create-order', async (req, res) => {
         const { error: upsertError } = await db
             .from('payments')
             .upsert({
-                user_id: affiliateId || null,
+                user_id: finalAffiliateId || null,
                 product_id: productId,
                 order_id: order.result.id,
                 amount: price,
@@ -397,7 +420,43 @@ async function handlePaymentCaptureCompleted(resource) {
 
     // Calculate and create commission if affiliate involved
     if (payment.user_id && amount > 0) {
-        const affiliateCommission = amount * MERCHANT_CONFIG.affiliateCommission;
+        // --- FRAUD PREVENTION: Identification of Suspicious Leads ---
+        // 1. Check Time-to-Conversion (TTC)
+        const ttc = Date.now() - new Date(payment.created_at).getTime();
+        let isSuspicious = false;
+        let fraudReason = '';
+
+        if (ttc < 3000) { // Less than 3 seconds between click and capture? Extremely unlikely for a human.
+            isSuspicious = true;
+            fraudReason = 'Abnormally fast conversion (Bot behavior)';
+        }
+
+        // --- FEATURE: Advanced Commission Logic (Flat, %, Tiered) ---
+        const { data: affiliate } = await db.from('users').select('*, affiliate_tiers(*)').eq('id', payment.user_id).single();
+        const { data: product } = await db.from('products').select('*').eq('id', payment.product_id).single();
+
+        let baseCommission = 0;
+        if (product.commission_type === 'flat') {
+            baseCommission = parseFloat(product.flat_commission_amount || 0);
+        } else {
+            // Default to percentage
+            const rate = parseFloat(product.commission_rate || MERCHANT_CONFIG.affiliateCommission * 100) / 100;
+            baseCommission = amount * rate;
+        }
+
+        // Apply Tier Multiplier if exists
+        let multiplier = 1.0;
+        if (affiliate && affiliate.affiliate_tiers) {
+            multiplier = parseFloat(affiliate.affiliate_tiers.commission_multiplier || 1.0);
+        } else if (affiliate) {
+            // Auto-Tier detection (Scalability Feature)
+            const { data: tiers } = await db.from('affiliate_tiers').select('*').order('threshold_earnings', 'desc');
+            const totalEarned = parseFloat(affiliate.commission_balance || 0);
+            const currentTier = tiers.find(t => totalEarned >= parseFloat(t.threshold_earnings));
+            if (currentTier) multiplier = parseFloat(currentTier.commission_multiplier);
+        }
+
+        const finalCommission = baseCommission * multiplier;
 
         // Check if commission already exists
         const { data: existingCommission } = await db
@@ -411,26 +470,40 @@ async function handlePaymentCaptureCompleted(resource) {
                 .insert([{
                     user_id: payment.user_id,
                     order_id: orderId,
-                    amount: affiliateCommission,
-                    status: 'pending'
+                    amount: finalCommission,
+                    status: isSuspicious ? 'on-hold' : 'pending',
+                    fraud_flag: isSuspicious,
+                    fraud_reason: fraudReason
                 }]);
 
-            if (commissionError) {
-                logger.error('Failed to create commission record', {
-                    error: commissionError.message,
-                    orderId,
-                    userId: payment.user_id
-                });
-                throw commissionError;
+            if (commissionError) throw commissionError;
+
+            // Only update user balance if NOT suspicious (confirmed commissions only)
+            if (!isSuspicious) {
+                await db.from('users').update({ 
+                    commission_balance: (parseFloat(affiliate.commission_balance || 0) + finalCommission)
+                }).eq('id', payment.user_id);
+
+                // Notify Affiliate (Performance Notification)
+                await emailService.sendSaleNotification(affiliate.email, affiliate.name, finalCommission);
+            } else {
+                logger.warn('Commission placed on hold (Suspicious Activity)', { orderId, reason: fraudReason });
+                
+                // Notify Admin
+                await db.from('admin_notifications').insert([{
+                    notification_type: 'fraud_alert',
+                    title: 'Suspicious Commission Blocked',
+                    message: `Order ${orderId} by Affiliate ${affiliate.name} flagged: ${fraudReason}`,
+                    priority: 'high'
+                }]);
             }
 
-            logger.info('Commission created from webhook', {
+            logger.info('Commission created (Advanced Logic)', {
                 orderId,
                 userId: payment.user_id,
-                amount: affiliateCommission
+                amount: finalCommission,
+                tierMultiplier: multiplier
             });
-        } else {
-            logger.info('Commission already exists for order', { orderId });
         }
     }
 

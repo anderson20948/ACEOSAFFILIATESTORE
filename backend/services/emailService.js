@@ -354,6 +354,29 @@ class EmailService {
         });
     }
 
+    // --- AUTOMATION: New Methods ---
+    async sendOnboarding(userEmail, userName, dashboardUrl) {
+        return this.sendEmail(userEmail, userName, 'onboarding', {
+            name: userName,
+            dashboardUrl: dashboardUrl
+        });
+    }
+
+    async sendSaleNotification(userEmail, userName, amount) {
+        return this.sendEmail(userEmail, userName, 'sale_notification', {
+            name: userName,
+            amount: amount
+        });
+    }
+
+    async sendTierUp(userEmail, userName, tierName, multiplier) {
+        return this.sendEmail(userEmail, userName, 'tier_up', {
+            name: userName,
+            tierName: tierName,
+            multiplier: multiplier
+        });
+    }
+
     // Send payment processed email
     async sendPaymentProcessed(userEmail, userName, amount, transactionId = null) {
         return this.sendEmail(userEmail, userName, 'payment_processed', {

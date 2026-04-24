@@ -13,8 +13,22 @@
     <link rel="stylesheet" href="css/colors.css">
     <meta name="csrf-token" content="<%= csrfToken %>">
     <style>
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            background-color: #222;
+        }
+
         .login-page {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            background: linear-gradient(-45deg, #1E1B4B, #4C1D95, #BE185D, #E11D48);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -23,28 +37,47 @@
         }
 
         .login-container {
-            background: #fff;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             padding: 50px;
-            border-radius: 15px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            border-radius: 24px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
             width: 100%;
             max-width: 450px;
             text-align: center;
+            color: white;
+            transition: transform 0.3s ease;
+            animation: fadeIn 1s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .login-container:hover {
+            transform: translateY(-5px);
         }
 
         .login-container .logo {
-            margin-bottom: 30px;
+            margin-bottom: 25px;
+            filter: drop-shadow(0 0 8px rgba(255,255,255,0.3));
         }
 
         .login-container h2 {
             font-weight: 700;
-            margin-bottom: 10px;
-            color: #333;
+            margin-bottom: 8px;
+            color: #fff;
+            text-shadow: 1px 1px 4px rgba(0,0,0,0.3);
+            font-size: 28px;
         }
 
         .login-container p {
-            color: #777;
-            margin-bottom: 30px;
+            color: rgba(255, 255, 255, 0.85);
+            margin-bottom: 35px;
+            font-size: 15px;
         }
 
         .form-group {
@@ -53,54 +86,103 @@
         }
 
         .form-group label {
-            font-weight: 600;
-            color: #555;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.95);
+            margin-bottom: 8px;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+            display: block;
         }
 
         .form-control {
-            height: 50px;
-            border-radius: 8px;
-            border: 1px solid rgba(221, 221, 221, 0.5);
-            padding: 10px 15px;
-            background: transparent;
-            color: #333;
+            height: 52px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 10px 18px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.5);
         }
 
         .form-control:focus {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: #ff5e14;
-            box-shadow: none;
+            background: rgba(255, 255, 255, 0.15);
+            border-color: #fff;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
             outline: none;
         }
 
         .btn-login {
             width: 100%;
-            height: 50px;
-            background: #ff5e14;
+            height: 52px;
+            background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
             color: #fff;
             border: none;
-            border-radius: 8px;
+            border-radius: 12px;
             font-weight: 700;
+            font-size: 16px;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: 0.3s;
-            margin-top: 10px;
+            letter-spacing: 1.5px;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+            box-shadow: 0 4px 15px rgba(255, 75, 43, 0.4);
+            cursor: pointer;
         }
 
         .btn-login:hover {
-            background: #e04d00;
-            transform: translateY(-2px);
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 6px 20px rgba(255, 75, 43, 0.6);
+            background: linear-gradient(135deg, #ff4b2b 0%, #ff416c 100%);
+        }
+        
+        .btn-login:active {
+            transform: translateY(1px);
         }
 
         .footer-links {
-            margin-top: 25px;
+            margin-top: 30px;
             font-size: 14px;
-            color: #777;
+            color: rgba(255, 255, 255, 0.7);
         }
 
         .footer-links a {
-            color: #ff5e14;
+            color: #fff;
             font-weight: 600;
+            text-decoration: none;
+            margin-left: 5px;
+            position: relative;
+            padding-bottom: 2px;
+        }
+        
+        .footer-links a::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            transform: scaleX(0);
+            height: 2px;
+            bottom: 0;
+            left: 0;
+            background-color: #fff;
+            transform-origin: bottom right;
+            transition: transform 0.25s ease-out;
+        }
+
+        .footer-links a:hover::after {
+            transform: scaleX(1);
+            transform-origin: bottom left;
+        }
+        
+        .toggle-password {
+            color: rgba(255, 255, 255, 0.6) !important;
+            transition: color 0.2s ease;
+        }
+        
+        .toggle-password:hover {
+            color: #fff !important;
         }
     </style>
 </head>
@@ -116,49 +198,33 @@
 
             <form id="registerForm">
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                <!-- Step 1: Account Info -->
-                <div class="wizard-step" id="step1">
-                    <div class="form-group">
-                        <label>Full Name</label>
-                        <input type="text" id="regName" class="form-control" placeholder="John Doe" required>
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="regName" class="form-control" placeholder="John Doe" required>
+                </div>
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="regEmail" class="form-control" placeholder="example@mail.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <div style="position: relative;">
+                        <input type="password" id="regPass" class="form-control" placeholder="Password" required>
+                        <i class="fa fa-eye toggle-password"
+                            style="position: absolute; right: 15px; top: 15px; cursor: pointer; color: #777;"></i>
                     </div>
-                    <div class="form-group">
-                        <label>Email Address</label>
-                        <input type="email" id="regEmail" class="form-control" placeholder="example@mail.com" required>
-                    </div>
-                    <div class="text-center">
-                        <button type="button" class="btn-login" onclick="nextStep(2)">Next Step</button>
+                </div>
+                <div class="form-group">
+                    <label>Confirm Password</label>
+                    <div style="position: relative;">
+                        <input type="password" id="regPassConfirm" class="form-control" placeholder="Confirm Password" required>
                     </div>
                 </div>
 
-                <!-- Step 2: Password -->
-                <div class="wizard-step" id="step2" style="display: none;">
-                    <div class="form-group">
-                        <label>Password</label>
-                        <div style="position: relative;">
-                            <input type="password" id="regPass" class="form-control" placeholder="Password" required>
-                            <i class="fa fa-eye toggle-password"
-                                style="position: absolute; right: 15px; top: 15px; cursor: pointer; color: #777;"></i>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Confirm Password</label>
-                        <div style="position: relative;">
-                            <input type="password" id="regConfirm" class="form-control" placeholder="Confirm Password"
-                                required>
-                            <i class="fa fa-eye toggle-password"
-                                style="position: absolute; right: 15px; top: 15px; cursor: pointer; color: #777;"></i>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-xs-6">
-                            <button type="button" class="btn-login" style="background: #6c757d;"
-                                onclick="nextStep(1)">Back</button>
-                        </div>
-                        <div class="col-xs-6">
-                            <button type="submit" class="btn-login">Register Now</button>
-                        </div>
-                    </div>
+                <div id="registerError" style="color: #ff4b2b; margin-bottom: 15px; font-size: 14px; display: none; text-align: center; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px;"></div>
+
+                <div class="text-center">
+                    <button type="submit" class="btn-login">Register Now</button>
                 </div>
             </form>
 
@@ -174,7 +240,29 @@
     <script>
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            await handleRegister();
+            const btn = e.target.querySelector('button');
+            const errorDiv = document.getElementById('registerError');
+            
+            // Basic frontend match check
+            const pass = document.getElementById('regPass').value;
+            const confirm = document.getElementById('regPassConfirm').value;
+            
+            if (pass !== confirm) {
+                errorDiv.textContent = "Passwords do not match";
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            errorDiv.style.display = 'none';
+            btn.disabled = true;
+            btn.textContent = 'Creating Account...';
+            
+            try {
+                await handleRegister();
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Register Now';
+            }
         });
     </script>
 </body>

@@ -4,13 +4,21 @@ const rateLimit = require('express-rate-limit');
 // Limits each IP to 100 requests per 15 minutes
 const generalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 100,
+    max: 1000, // Increased for scalability (handles more concurrent users)
     standardHeaders: true,
     legacyHeaders: false,
     message: {
         success: false,
-        message: 'Too many requests from this IP, please try again after 15 minutes.'
+        message: 'Too many requests. System is under high load, please try again shortly.'
     }
+});
+
+// Generous Limiter for Dashboard Auto-Refresh
+const dashboardLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 500, // Allows ~1 request every 2 seconds
+    standardHeaders: true,
+    legacyHeaders: false
 });
 
 // Stricter Limiter for Auth Routes
@@ -52,5 +60,6 @@ module.exports = {
     generalLimiter,
     authLimiter,
     trackingLimiter,
-    emailLimiter
+    emailLimiter,
+    dashboardLimiter
 };

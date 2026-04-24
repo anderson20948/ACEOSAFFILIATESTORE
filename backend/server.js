@@ -38,20 +38,24 @@ const AD_CLICK_VALUE = 0.05;
 const SUPER_ADMINS = []; // Kept as empty for legacy compatibility if needed elsewhere
 
 // Pre-defined admin users with their credentials
-const ADMIN_USERS = [
-  {
-    name: 'Dennis Admin',
-    email: 'tsumamngindodenis@gmail.com',
-    password: 'Dennis123',
+// Pre-defined admin users (Now loaded from .env)
+const ADMIN_USERS = [];
+if (process.env.ADMIN1_EMAIL) {
+  ADMIN_USERS.push({
+    name: process.env.ADMIN1_NAME || 'Admin 1',
+    email: process.env.ADMIN1_EMAIL,
+    password: process.env.ADMIN1_PASS || 'admin123',
     role: 'admin'
-  },
-  {
-    name: 'Anderson Admin',
-    email: 'malomoanderson@gmail.com',
-    password: 'maina098',
+  });
+}
+if (process.env.ADMIN2_EMAIL) {
+  ADMIN_USERS.push({
+    name: process.env.ADMIN2_NAME || 'Admin 2',
+    email: process.env.ADMIN2_EMAIL,
+    password: process.env.ADMIN2_PASS || 'admin123',
     role: 'admin'
-  }
-];
+  });
+}
 
 const ADMIN_EMAILS = process.env.ADMIN_EMAILS || 'tsumamngindodenis@gmail.com,malomoanderson@gmail.com';
 
@@ -343,6 +347,10 @@ const paypalRouter = require('./routes/paypal');
 const advertisingRouter = require('./routes/advertising');
 const trackingRouter = require('./routes/tracking');
 const profileRouter = require('./routes/profile');
+const payoutsRouter = require('./routes/payouts');
+const settingsRouter = require('./routes/settings');
+const reportsRouter = require('./routes/reports');
+const couponsRouter = require('./routes/coupons');
 
 app.use('/api/auth', authRouter);
 app.use('/api/products', productsRouter);
@@ -352,6 +360,10 @@ app.use('/api/paypal', paypalRouter);
 app.use('/api/advertising', advertisingRouter);
 app.use('/api/tracking', trackingRouter);
 app.use('/api/profile', profileRouter);
+app.use('/api/payouts', payoutsRouter);
+app.use('/api/settings', settingsRouter);
+app.use('/api/reports', reportsRouter);
+app.use('/api/coupons', couponsRouter);
 
 // Static serving for profile uploads
 app.use('/uploads', express.static(path.join(effectiveFrontendDir, 'public', 'uploads')));

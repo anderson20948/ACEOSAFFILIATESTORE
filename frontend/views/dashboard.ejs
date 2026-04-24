@@ -214,7 +214,10 @@
   <div id="dashboard-content">
     <!-- Topbar -->
     <header class="dashboard-topbar">
-      <h2>Welcome to Aceos</h2>
+      <div style="display: flex; align-items: center;">
+        <button id="sidebarToggle" class="mobile-toggle"><i class="fa fa-bars"></i></button>
+        <h2>Welcome to Aceos</h2>
+      </div>
       <div class="user-menu" onclick="showSection('profile')" style="cursor: pointer;">
         <span id="welcome-user">Welcome, <%= user %></span>
         <div class="user-avatar" id="topbar-avatar" style="background-size: cover; background-position: center;"></div>
@@ -290,6 +293,17 @@
                 <span class="status-badge status-none" id="badge-signal">Checking...</span>
               </a>
             </div>
+          </div>
+
+          <div class="dash-card" style="margin-top: 30px;">
+            <h3><i class="fa fa-ticket"></i> My Coupon Codes</h3>
+            <p>Use coupon codes for platforms where referral links are restricted (like Instagram).</p>
+            <div id="affiliate-coupons-list" style="margin-top: 15px;">
+              <p>Loading coupons...</p>
+            </div>
+            <button class="btn-dash" id="createCouponBtn" style="margin-top: 20px;">
+              <i class="fa fa-plus"></i> Create New Coupon
+            </button>
           </div>
 
           <div class="dash-card" style="margin-top: 30px;">
@@ -481,6 +495,22 @@
         document.getElementById('welcome-user').innerText = `Welcome, ${user}`;
       }
 
+      // Sidebar Mobile Toggle
+      const sidebar = document.getElementById('dashboard-sidebar');
+      const toggleBtn = document.getElementById('sidebarToggle');
+      
+      if (toggleBtn && sidebar) {
+        toggleBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          sidebar.classList.toggle('open');
+        });
+
+        // Close when clicking main content
+        document.getElementById('dashboard-content').addEventListener('click', () => {
+          sidebar.classList.remove('open');
+        });
+      }
+
       if (getUserRole() === 'admin') {
         const sidebar = document.querySelector('.sidebar-nav');
         const li = document.createElement('li');
@@ -628,6 +658,7 @@
     <!-- include Activity Tracker & Stats Engine -->
     <script src="js/activity-tracker.js"></script>
     <script src="js/dashboard-stats.js"></script>
+    <script src="js/coupons-manager.js"></script>
 
   <script>
   // ══════════════════════════════════════════════════

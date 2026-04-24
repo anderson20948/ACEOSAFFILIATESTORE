@@ -9,8 +9,22 @@ if (oauthToken) {
     localStorage.setItem('role', urlParams.get('role') || 'affiliate');
     localStorage.setItem('userId', urlParams.get('id') || '');
     localStorage.setItem('username', urlParams.get('name') || '');
-    // Clean up URL so tokens are not visually exposed in address bar or re-processed
+// Clean up URL so tokens are not visually exposed in address bar or re-processed
     window.history.replaceState({}, document.title, window.location.pathname);
+}
+
+// SECURITY POLICY: Logout on page refresh
+// If the navigation type is 'reload', clear all authentication data
+if (window.performance && window.performance.getEntriesByType("navigation").length > 0) {
+    const navType = window.performance.getEntriesByType("navigation")[0].type;
+    if (navType === 'reload') {
+        console.warn('Security policy enforced: Session cleared on page refresh.');
+        localStorage.removeItem('token');
+        localStorage.removeItem('role');
+        localStorage.removeItem('userId');
+        localStorage.removeItem('username');
+        // The redirection to login.html will be handled by the protected pages check below
+    }
 }
 
 if (urlParams.get('expired')) {
@@ -88,36 +102,53 @@ async function handleLogin(email, password) {
 }
 
 async function handleRegister() {
-    const name = document.getElementById('regName').value;
-    const email = document.getElementById('regEmail').value;
+    const name = document.getElementById('regName').value.trim();
+    const email = document.getElementById('regEmail').value.trim();
     const pass = document.getElementById('regPass').value;
-    const confirm = document.getElementById('regConfirm').value;
+    const confirm = document.getElementById('regPassConfirm')?.value;
+    const errorDiv = document.getElementById('registerError');
 
+    // Reset error state
+    if (errorDiv) {
+        errorDiv.textContent = '';
+        errorDiv.style.display = 'none';
+    }
+
+    // 1. Presence check
     if (!name || !email || !pass) {
-        alert('Please fill in all fields');
+        showValidationError('Please fill in all required fields');
         return;
     }
 
-    if (pass !== confirm) {
-        alert('Passwords do not match');
+    // 2. Name length check
+    if (name.length < 2) {
+        showValidationError('Name must be at least 2 characters long');
         return;
     }
 
-    // Enhanced password validation (client-side basic check)
-    if (pass.length < 8) {
-        alert('Password must be at least 8 characters long');
+    // 3. Email Format check
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        showValidationError('Please enter a valid email address');
         return;
     }
 
-    if (!/[A-Z]/.test(pass) || !/[a-z]/.test(pass) || !/\d/.test(pass) || !/[!@#$%^&*(),.?":{}|<>]/.test(pass)) {
-        alert('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character');
+    // 4. Password Length check
+    if (pass.length < 6) {
+        showValidationError('Password must be at least 6 characters long');
+        return;
+    }
+
+    // 5. Password Match check
+    if (confirm && pass !== confirm) {
+        showValidationError('Passwords do not match');
         return;
     }
 
     try {
         const data = await safeFetch('/api/auth/register', {
             method: 'POST',
-            body: JSON.stringify({ username: name, email: email, password: pass })
+            body: JSON.stringify({ username: name, email, password: pass })
         });
 
         if (data && data.token) {
@@ -131,15 +162,24 @@ async function handleRegister() {
             setTimeout(() => {
                 window.location.href = '/dashboard';
             }, 800);
-        } else if (data && data.message) {
-            // Fallback for when auto-login is not provided
-            showToast(data.message + ' Redirecting to login...', 'success');
-            setTimeout(() => {
-                window.location.href = 'login.html';
-            }, 1500);
         }
     } catch (err) {
         console.error('Registration failed:', err);
+        // Error is already shown by safeFetch via showToast
+        if (errorDiv) {
+            errorDiv.textContent = err.message;
+            errorDiv.style.display = 'block';
+        }
+    }
+}
+
+function showValidationError(message) {
+    const errorDiv = document.getElementById('registerError');
+    if (errorDiv) {
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+    } else {
+        showToast(message, 'warning');
     }
 }
 
